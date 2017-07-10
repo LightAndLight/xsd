@@ -3,8 +3,8 @@ version:              0.5.0.1
 license:              BSD3
 license-file:         LICENSE
 author:               Tony Morris <ʇǝu˙sıɹɹoɯʇ@ןןǝʞsɐɥ>
-maintainer:           Stefan Wehr <wehr@factisresearch.com>, Tony Morris <ʇǝu˙sıɹɹoɯʇ@ןןǝʞsɐɥ>
-copyright:            2010-2014 Tony Morris, Stefan Wehr
+maintainer:           Queensland Functional Programming Lab <haskell@qfpl.io>
+copyright:            2010-2017 Tony Morris, Stefan Wehr, 2017 Data61 / CSIRO
 synopsis:             XML Schema data structures
 category:             XML
 description:          XML Schema data structures (XSD)

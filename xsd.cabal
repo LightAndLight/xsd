@@ -8,15 +8,15 @@ copyright:            2010-2014 Tony Morris, Stefan Wehr
 synopsis:             XML Schema data structures
 category:             XML
 description:          XML Schema data structures (XSD)
-homepage:             https://github.com/tonymorris/xsd
-bug-reports:          https://github.com/tonymorris/xsd/issues
+homepage:             https://github.com/data61/xsd
+bug-reports:          https://github.com/data61/xsd/issues
 cabal-version:        >= 1.10
 build-type:           Custom
 extra-source-files:   ChangeLog
 
 source-repository     head
   type:               git
-  location:           git@github.com:tonymorris/xsd.git
+  location:           git@github.com:data61/xsd.git
 
 flag                  small_base
   description:        Choose the new, split-up base package.

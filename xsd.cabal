@@ -26,10 +26,12 @@ library
                       Haskell2010
 
   build-depends:      base < 5 && >= 4.5
-                      , attoparsec >= 0.11
-                      , text >= 1.0
-                      , time >= 1.2.0.3
-                      , lens >= 4
+                      , attoparsec
+                      , text 
+                      , time
+                      , lens
+                      , xml-conduit
+                      , containers
 
   ghc-options:
                       -Wall
@@ -40,9 +42,15 @@ library
   hs-source-dirs:
                       src
 
-  exposed-modules:
-                      Text.XML.XSD
+  exposed-modules:    Example
+                      Text.XML.Attrs
+                      Text.XML.ID
                       Text.XML.XSD.DateTime
+                      Text.XML.XSD.ComplexType
+                      Text.XML.XSD.Element
+                      Text.XML.XSD.Schema
+                      Text.XML.XSD.Sequence
+                      Text.XML.XSD.Types
 
 test-suite doctests
   type:

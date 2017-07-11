@@ -1,122 +1,32 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE EmptyDataDecls #-}
+{-# language GeneralizedNewtypeDeriving #-}
+module Text.XML.XSD () where
 
-module Text.XML.XSD
-       ( E18
-       , Atto
-       , boolean
-       , toBoolean
-       , decimal
-       , integer
-       , toSigned
-       , long
-       , int
-       , short
-       , byte
-       , unsignedInteger
-       , unsignedLong
-       , unsignedInt
-       , unsignedShort
-       , unsignedByte
-       , float
-       , double
-       , fastDouble
-       , module Text.XML.XSD.DateTime
-       ) where
+import Prelude
 
-import           Text.XML.XSD.DateTime
+-- | 'restriction' element https://www.w3.org/TR/xmlschema-1/#element-restriction 
+data Restriction
+  = Restriction
+  { _rsBase :: Maybe QName
+  , _rsID :: Maybe ID
+  , _rsAttrs
+  , _rsSimpleType :: Maybe SimpleType
+  , _rsAnnotation :: Maybe Annotation
+  , _rsConstraints :: [ConstraintFacet]
+  }
 
-import           Prelude(String, Double, Float, Integral, Eq(..), (||), otherwise)
-import           Control.Monad (Monad(..), when)
-import           Data.Bool(Bool(..))
-import           Data.Fixed (Fixed, HasResolution(..), resolution)
-import           Data.Either(Either(..))
-import           Data.Function((.), ($))
-import           Data.Int (Int8, Int16, Int32, Int64)
-import           Data.List((++))
-import           Data.Text (Text, unpack)
-import           Data.Text.Lazy(toStrict)
-import           Data.Text.Lazy.Builder(toLazyText)
-import qualified Data.Text.Lazy.Builder.Int as TBI(decimal)
-import qualified Data.Text.Read as TR(rational, double, decimal, signed)
-import           Data.Word (Word8, Word16, Word32, Word64)
+-- | 'list' element https://www.w3.org/TR/xmlschema-1/#element-list 
+data List
+  = List
+  { _lsID :: Maybe ID
+  , _lsItemType :: Maybe QName
+  , _lsSimpleType :: Maybe SimpleType
+  , _lsAttrs :: Map Name Text
+  , _lsAnnotation :: Maybe Annotation
+  }
 
-data E18
-
-instance HasResolution E18 where
-  resolution _ = 1000000000000000000
-
-type Atto = Fixed E18
-
-checkReader :: Either String (a, Text) -> Either String a
-checkReader res =
-  do (val, t) <- res
-     when (t /= "") $ Left "leftovers"
-     return val
-
--- checkReader (Left msg) = Left msg
--- checkReader (Right (val, t))
---   | t /= "" = Left "leftovers"
---   | otherwise = Right val
-
-boolean :: Text -> Either String Bool
-boolean t
-  | t == "true" || t == "1" = Right True
-  | t == "false" || t == "0" = Right False
-  | otherwise = Left $ "invalid boolean '" ++ unpack t ++ "'"
-
-toBoolean :: Bool -> Text
-toBoolean True = "true"
-toBoolean False = "false"
-
-decimal :: Text -> Either String Atto
-decimal = checkReader . TR.rational
-
-signed :: Integral a => Text -> Either String a
-signed = checkReader . TR.signed TR.decimal
-
-unsigned :: Integral a => Text -> Either String a
-unsigned = checkReader . TR.decimal
-
-toSigned :: Integral a => a -> Text
-toSigned = toStrict . toLazyText . TBI.decimal
-
-integer :: Integral a => Text -> Either String a
-integer = signed
-
-long :: Text -> Either String Int64
-long = signed
-
-int :: Text -> Either String Int32
-int = signed
-
-short :: Text -> Either String Int16
-short = signed
-
-byte :: Text -> Either String Int8
-byte = signed
-
--- | What XSD calls @nonNegativeInteger@.
-unsignedInteger :: Integral a => Text -> Either String a
-unsignedInteger = unsigned
-
-unsignedLong :: Text -> Either String Word64
-unsignedLong = unsigned
-
-unsignedInt :: Text -> Either String Word32
-unsignedInt = unsigned
-
-unsignedShort :: Text -> Either String Word16
-unsignedShort = unsigned
-
-unsignedByte :: Text -> Either String Word8
-unsignedByte = unsigned
-
-float :: Text -> Either String Float
-float = checkReader . TR.rational
-
-double :: Text -> Either String Double
-double = checkReader . TR.rational
-
-fastDouble :: Text -> Either String Double
-fastDouble = checkReader . TR.double
+-- | 'union' element https://www.w3.org/TR/xmlschema-1/#element-union 
+data Union
+  = Union
+  { _unID :: Maybe ID
+  , _unMemberTypes :: [QName]
+  }

@@ -1,12 +1,14 @@
-{ mkDerivation, attoparsec, base, directory, doctest, filepath
-, lens, QuickCheck, quickcheck-instances, stdenv, template-haskell
-, text, time
+{ mkDerivation, attoparsec, base, containers, directory, doctest
+, filepath, lens, QuickCheck, quickcheck-instances, stdenv
+, template-haskell, text, time, xml-conduit
 }:
 mkDerivation {
   pname = "xsd";
   version = "0.5.0.1";
   src = ./.;
-  libraryHaskellDepends = [ attoparsec base lens text time ];
+  libraryHaskellDepends = [
+    attoparsec base containers lens text time xml-conduit
+  ];
   testHaskellDepends = [
     base directory doctest filepath QuickCheck quickcheck-instances
     template-haskell

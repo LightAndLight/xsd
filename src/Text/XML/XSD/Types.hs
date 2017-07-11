@@ -12,32 +12,32 @@ import Data.Text (Text)
 
 import qualified Data.Map as M
 
+import Text.XML.NCName
+import Text.XML.QName
+
 -- | XSD primitive datatypes
 data XSDataType
-  = String
-  | Boolean
-  | Decimal
-  | Float
-  | Double
-  | DateTime
-  | Time
-  | Date
-  | GYearMonth
-  | GYear
-  | GMonthDay
-  | GDay
-  | GMonth
-  | HexBinary
-  | Base64Binary
-  | AnyURI
-  | QName
-  | NOTATION
+  = TString
+  | TBoolean
+  | TDecimal
+  | TFloat
+  | TDouble
+  | TDateTime
+  | TTime
+  | TDate
+  | TGYearMonth
+  | TGYear
+  | TGMonthDay
+  | TGDay
+  | TGMonth
+  | THexBinary
+  | TBase64Binary
+  | TAnyURI
+  | TQName
+  | TNOTATION
 
 -- | XML ID
 type ID = Text
-
--- | XML non-colonized name
-type NCName = Text
 
 -- | Valid XML URI
 type URI = Text
@@ -50,9 +50,6 @@ type Regex = Text
 
 -- | Valid XML attribute name
 type Name = Text
-
--- | Fully-qualified XML name
-type QName = Text
 
 -- | Non-negative integer
 newtype NonNegative = NonNegative Int
@@ -388,7 +385,7 @@ class HasElement s where
 -} 
 
 class AsElement s where
-  _Element :: Text -> Review s Element
+  _Element :: NCName -> Review s Element
   _Element' :: Prism' s Element
 
 -- | Permitted values of when 'namespace' attribute is a list

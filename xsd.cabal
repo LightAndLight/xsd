@@ -32,6 +32,8 @@ library
                       , lens
                       , xml-conduit
                       , containers
+                      , pretty
+                      , template-haskell >= 2.11
 
   ghc-options:
                       -Wall
@@ -45,6 +47,8 @@ library
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.ID
+                      Text.XML.NCName
+                      Text.XML.QName
                       Text.XML.XSD.DateTime
                       Text.XML.XSD.ComplexType
                       Text.XML.XSD.Element

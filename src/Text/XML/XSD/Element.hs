@@ -10,6 +10,7 @@ module Text.XML.XSD.Element
 
 import Prelude(Either(..), Maybe(..))
 
+import Text.XML.NCName
 import Text.XML.XSD.Types
 
 mkElement' :: NCName -> Either SimpleType ComplexType -> Element

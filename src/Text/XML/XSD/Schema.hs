@@ -97,9 +97,6 @@ instance AsComplexType SchemaBody where
     prism' (schemaBody . review _ComplexType) $
     (\v -> _sbElement v ^? _ComplexType)
 
-
-  
-
 -- | A 'schema' content block
 data SchemaEntry
   = SchemaEntry

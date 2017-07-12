@@ -213,15 +213,49 @@ data Import
 data STFFinal = STFList | STFUnion | STFRestriction
 
 -- | Permitted values of 'simpleType's 'final' attribute
-data STFinal = STAll | STList STFFinal
+data STFinal = STAll | STMultiple STFFinal
 
--- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType 
+-- | Enumeration for possible contents of 'simpleType' element 
+-- | https://www.w3.org/TR/xmlschema-1/#element-simpleType
+data STContent
+  -- | Containing a 'restriction' element
+  -- | https://www.w3.org/TR/xmlschema-1/#element-restriction
+  = STRestriction
+  { strsBase :: Maybe QName
+  , strsID :: Maybe NCName
+  , strsAttrs :: Attrs
+  , strsAnnotation :: Maybe Annotation
+  , strsConstraints :: [ConstraintFacet]
+  }
+  
+  -- | Containing a 'list' element
+  -- | https://www.w3.org/TR/xmlschema-1/#element-list
+  | STList
+  { stlsID :: Maybe NCName
+  , stlsItemType :: Maybe QName
+  , stlsAttrs :: Attrs
+  , stlsAnnotation :: Maybe Annotation
+  , stlsTypeElement :: Maybe SimpleType
+  }
+  
+  -- | Containing a 'union' element
+  -- | https://www.w3.org/TR/xmlschema-1/#element-union
+  | STUnion
+  { stunID :: Maybe NCName
+  , stunMemberTypes :: [QName]
+  , stunAttrs :: Attrs
+  , stunAnnotation :: Maybe Annotation
+  , stunTypeElements :: [SimpleType]
+  }
+
+-- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType
 data SimpleType
   = SimpleType
   { _stID :: Maybe NCName
   , _stName :: Maybe NCName
   , _stFinal :: Maybe STFinal
   , _stAnnotation :: Maybe Annotation
+  , _stContent :: STContent
   }
   
 data CTBlock = CTBExtension | CTBRestriction

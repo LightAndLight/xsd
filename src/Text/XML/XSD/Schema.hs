@@ -34,6 +34,7 @@ import qualified Data.Text as T
 
 import Text.XML.Attrs
 import Text.XML.NCName
+import Text.XML.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form

@@ -18,6 +18,8 @@ import qualified Data.Text as T
 import Text.XML.Attrs
 import Text.XML.NCName
 import Text.XML.QName
+import Text.XML.Token
+import Text.XML.URI
 import Text.XML.XSD.Form
 
 -- | XSD primitive datatypes
@@ -41,9 +43,6 @@ data XSDataType
   | TQName
   | TNOTATION
 
--- | Valid XML URI
-type URI = Text
-
 -- | Valid langage
 type Language = Text
 
@@ -56,9 +55,6 @@ type Name = Text
 -- | Non-negative integer
 newtype NonNegative = NonNegative Int
   deriving Num
-
--- | Valid XML token
-newtype Token = Token String
 
 -- | Some text and its associated XSD type
 data AnySimpleType

@@ -52,6 +52,7 @@ library
                       Text.XML.ID
                       Text.XML.NCName
                       Text.XML.QName
+                      Text.XML.Token
                       Text.XML.XSD
                       Text.XML.XSD.DateTime
                       Text.XML.XSD.Block

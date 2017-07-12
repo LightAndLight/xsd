@@ -6,6 +6,8 @@ import Prelude
 
 import Text.XML.Lens
 import Text.XML.NCName
+import Text.XML.Token
+import Text.XML.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
@@ -38,8 +40,10 @@ documentToXSD document =
             schema ^? attr "elementFormDefault" . _Form
         , _schemaFinalDefault =
             schema ^? attr "finalDefault" . _Final
-        , _schemaTargetNamespace = _
-        , _schemaVersion = _
+        , _schemaTargetNamespace =
+            schema ^? attr "targetNamespace" . _URI
+        , _schemaVersion =
+            schema ^? attr "version" . _Token
         , _schemaXMLLang = _
         , _schemaAttrs = _
         , _schemaPrelude = _

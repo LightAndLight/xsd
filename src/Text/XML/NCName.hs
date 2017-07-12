@@ -20,7 +20,7 @@ import Language.Haskell.TH.Quote
 import qualified Data.Text as T
 
 -- | XML non-colonized name
-newtype NCName = NCName Text deriving (Eq, Show)
+newtype NCName = NCName Text deriving (Eq, Ord, Show)
 
 isNCName :: String -> Bool
 isNCName input =

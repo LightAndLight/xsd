@@ -126,7 +126,7 @@ data Schema
   , _schemaTargetNamespace :: Maybe URI
   , _schemaVersion :: Maybe Token
   , _schemaXMLLang :: Maybe Language
-  , _schemaAttrs :: Map Name Text
+  , _schemaAttrs :: Attrs
   , _schemaContent :: [SchemaEntry]
   }
 
@@ -142,11 +142,11 @@ schema content
   , _schemaTargetNamespace = Nothing
   , _schemaVersion = Nothing
   , _schemaXMLLang = Nothing
-  , _schemaAttrs = M.empty
+  , _schemaAttrs = emptyAttrs
   , _schemaContent = content
   }
 
 makeLenses ''Schema
 
 instance HasAttrs Schema where
-  attrs = schemaAttrs
+  attrs = schemaAttrs . attrs

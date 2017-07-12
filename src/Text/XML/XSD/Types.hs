@@ -12,6 +12,7 @@ import Data.Text (Text)
 
 import qualified Data.Map as M
 
+import Text.XML.Attrs
 import Text.XML.NCName
 import Text.XML.QName
 
@@ -69,7 +70,7 @@ data AnySimpleType
 data Annotation
   = Annotation
   { _annID :: Maybe ID
-  , _annAttrs :: Map Name Text
+  , _annAttrs :: Attrs
   , _annContent :: [AnnotationContent]
   }
 
@@ -78,7 +79,7 @@ data AnnotationContent
   -- | 'appinfo' element https://www.w3.org/TR/xmlschema-1/#element-appinfo
   = AppInfo
   { _aiURI :: Maybe URI
-  , _aiAttrs :: Map Name Text
+  , _aiAttrs :: Attrs
   , _aiContent :: [Element]
   }
   
@@ -86,7 +87,7 @@ data AnnotationContent
   | Documentation
   { _dcURI :: Maybe URI
   , _dcLanguage :: Maybe Language
-  , _dcAttrs :: Map Name Text
+  , _dcAttrs :: Attrs
   , _dcContent :: [Element]
   }
 
@@ -138,7 +139,7 @@ data ConstraintFacet
   = CFLength
     { _cfID :: Maybe ID
     , _cfLength :: Length
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
   
@@ -146,7 +147,7 @@ data ConstraintFacet
   | CFMinLength
     { _cfID :: Maybe ID
     , _cfMinLength :: MinLength
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
   
@@ -154,7 +155,7 @@ data ConstraintFacet
   | CFMaxLength
     { _cfID :: Maybe ID
     , _cfMaxLength :: MaxLength
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
 
@@ -162,7 +163,7 @@ data ConstraintFacet
   | CFPattern
     { _cfID :: Maybe ID
     , _cfPattern :: Pattern
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
     
@@ -170,7 +171,7 @@ data ConstraintFacet
   | CFEnumeration
     { _cfID :: Maybe ID
     , _cfEnumeration :: Enumeration
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
     
@@ -178,7 +179,7 @@ data ConstraintFacet
   | CFWhiteSpace
     { _cfID :: Maybe ID
     , _cfWhiteSpace :: WhiteSpace
-    , _cfAttrs :: Map Name Text
+    , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
     }
     
@@ -197,7 +198,7 @@ data Include
   = Include
   { _incID :: Maybe ID
   , _incSchemaLocation :: Maybe URI
-  , _incAttrs :: Map Name Text
+  , _incAttrs :: Attrs
   , _incAnnotation :: Maybe Annotation
   }
   
@@ -207,7 +208,7 @@ data Import
   { _impID :: Maybe ID
   , _impNamespace :: Maybe URI
   , _impSchemaLocation :: Maybe URI
-  , _impAttrs :: Map Name Text
+  , _impAttrs :: Attrs
   , _impAnnotation :: Maybe Annotation
   }
   
@@ -235,7 +236,7 @@ data CTContent
   -- | Containing a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent
   = CTSimpleContent
   { _ctscID :: Maybe ID
-  , _ctscAttrs :: Map Name Text
+  , _ctscAttrs :: Attrs
   , _ctscAnnotation :: Maybe Annotation
   , _ctscContent :: Either SimpleRestriction SimpleExtension
   }
@@ -243,7 +244,7 @@ data CTContent
   -- | Containing a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent
   | CTComplexContent
   { _ctccID :: Maybe ID
-  , _ctccAttrs :: Map Name Text
+  , _ctccAttrs :: Attrs
   , _ctccMixed :: Maybe Bool
   , _ctccAnnotation :: Maybe Annotation
   , _ctccContent :: Either ComplexRestriction ComplexExtension
@@ -282,7 +283,7 @@ data Redefine
   = Redefine
   { _redID :: Maybe ID
   , _redSchemaLocation :: Maybe URI
-  , _redAttrs :: Map Name Text
+  , _redAttrs :: Attrs
   , _redContent :: [Either Annotation RedefineContent]
   }
   
@@ -293,7 +294,7 @@ data Notation
   , _notName :: Maybe NCName
   , _notPublic :: Maybe Token
   , _notSystem :: Maybe URI
-  , _notAttrs :: Map Name Text
+  , _notAttrs :: Attrs
   , _notAnnotation :: Maybe Annotation
   }
   
@@ -311,7 +312,7 @@ data Attribute
   , _attRef :: Maybe QName
   , _attType :: Maybe QName
   , _attUse :: Maybe Use
-  , _attAttrs :: Map Name Text
+  , _attAttrs :: Attrs
   , _attAnnotation :: Maybe Annotation
   , _attSimpleType :: Maybe SimpleType
   }
@@ -322,7 +323,7 @@ data AttributeGroup
   { _agID :: Maybe ID
   , _agName :: Maybe NCName
   , _agRef :: Maybe QName
-  , _agAttrs :: Map Name Text
+  , _agAttrs :: Attrs
   , _agAnnotation :: Maybe Annotation
   , _agAttributeSpec :: [Either Attribute AttributeGroup]
   , _agAnyAttribute :: Maybe AnyAttribute
@@ -344,7 +345,7 @@ data Element
   , _elTypeName :: Maybe QName
   , _elAnnotation :: Maybe Annotation
   , _elTypeElement :: Maybe (Either SimpleType ComplexType)
-  , _elAttrs :: Map Name Text
+  , _elAttrs :: Attrs
   -- , _elSomethingKeywords
   -- , elRef :: QName
   -- , elSubstitutionGroup :: QName
@@ -365,7 +366,7 @@ mkElement name
   , _elTypeName = Nothing
   , _elAnnotation = Nothing
   , _elTypeElement = Nothing
-  , _elAttrs = M.empty
+  , _elAttrs = emptyAttrs
   }
 
 {-
@@ -403,7 +404,7 @@ data AnyAttribute
   { _aaID :: Maybe ID
   , _aaNamespace :: Maybe Namespace
   , _aaProcessContents :: Maybe ProcessContents
-  , _aaAttrs :: Map Name Text
+  , _aaAttrs :: Attrs
   , _aaAnnotation :: Maybe Annotation
   }
 
@@ -413,7 +414,7 @@ data SimpleAttributeGroup
   = SimpleAttributeGroup
   { _sagID :: Maybe ID
   , _sagRef :: Maybe QName
-  , _sagAttrs :: Map Name Text
+  , _sagAttrs :: Attrs
   , _sagAnnotation :: Maybe Annotation
   }
 
@@ -422,7 +423,7 @@ data SimpleRestriction
   = SimpleRestriction
   { _srsBase :: Maybe QName
   , _srsID :: Maybe ID
-  , _srsAttrs :: Map Name Text
+  , _srsAttrs :: Attrs
   , _srsType :: Maybe SimpleType
   , _srsAnnotation :: Maybe Annotation
   , _srsConstraints :: [ConstraintFacet]
@@ -452,7 +453,7 @@ data All
   { _allID :: Maybe ID
   , _allMaxOccurs :: One
   , _allMinOccurs :: Either Zero One
-  , _allAttrs :: Map Name Text
+  , _allAttrs :: Attrs
   , _allAnnotation :: Maybe Annotation
   , _allContent :: [Element]
   }
@@ -465,7 +466,7 @@ data Any
   , _anyMinOccurs :: NonNegative
   , _anyNamespace :: Maybe Namespace
   , _anyProcessContents :: ProcessContents
-  , _anyAttrs :: Map Name Text
+  , _anyAttrs :: Attrs
   , _anyAnnotation :: Maybe Annotation
   }
 
@@ -482,7 +483,7 @@ data Choice
   { _choiceID :: Maybe ID
   , _choiceMaxOccurs :: Occurances
   , _choiceMinOccurs :: NonNegative
-  , _choiceAttrs :: Map Name Text
+  , _choiceAttrs :: Attrs
   , _choiceAnnotation :: Maybe Annotation
   , _choiceContent :: [ChoiceContent]
   }
@@ -507,7 +508,7 @@ data Sequence
   { _sequenceID :: Maybe ID
   , _sequenceMaxOccurs :: Maybe Occurances
   , _sequenceMinOccurs :: Maybe NonNegative
-  , _sequenceAttrs :: Map Name Text
+  , _sequenceAttrs :: Attrs
   , _sequenceAnnotation :: Maybe Annotation
   , _sequenceContent :: [SequenceContent]
   }
@@ -529,7 +530,7 @@ data Group
   , _grMinOccurs :: Maybe NonNegative
   , _grName :: Maybe NCName
   , _grRef :: Maybe QName
-  , _grAttrs :: Map Name Text
+  , _grAttrs :: Attrs
   , _grAnnotation :: Maybe Annotation
   , _grContent :: Maybe GroupContent
   }
@@ -553,7 +554,7 @@ data ComplexExtension
   = ComplexExtension
   { _cexID :: Maybe ID
   , _cexBase :: Maybe QName
-  , _cexAttrs :: Map Name Text
+  , _cexAttrs :: Attrs
   , _cexAnnotation :: Maybe Annotation
   , _cexGroupDefinition :: Maybe CTGroupDefinition
   , _cexAttributeSpec :: [Either Attribute AttributeGroup]
@@ -565,7 +566,7 @@ data ComplexRestriction
   = ComplexRestriction
   { _cerID :: Maybe ID
   , _cerBase :: Maybe QName
-  , _cerAttrs :: Map Name Text
+  , _cerAttrs :: Attrs
   , _cerAnnotation :: Maybe Annotation
   , _cerGroupDefinition :: Maybe CTGroupDefinition
   , _cerAttributeSpec :: [Either Attribute AttributeGroup]

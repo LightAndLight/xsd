@@ -25,11 +25,18 @@ data QName
   { _qnPrefix :: Maybe NCName
   , _qnLocalPart :: NCName
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
   
 isQName :: String -> Bool
 isQName = isJust . getQName
 
+mkQName :: String -> Maybe QName
+mkQName str = do
+  (before, after) <- getQName str
+  liftA2 QName (mkNCName <$> before) (mkNCName after)
+  
+-- This is needed internally because we don't have an instance for `Lift Text`
+-- for use in the quasiquoter
 getQName :: String -> Maybe (Maybe String, String)
 getQName str =
   let (before, after) = break (== ':') str
@@ -41,11 +48,6 @@ getQName str =
       then Just (Just before, rest)
       else Nothing
     _ -> Nothing
-
-mkQName :: String -> Maybe QName
-mkQName str = do
-  (before, after) <- getQName str
-  liftA2 QName (mkNCName <$> before) (mkNCName after)
 
 qn :: QuasiQuoter
 qn =

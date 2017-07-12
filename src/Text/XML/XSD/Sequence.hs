@@ -8,7 +8,6 @@ module Text.XML.XSD.Sequence
 
 import Prelude (Maybe(..))
 
-import Text.XML.Attrs
 import Text.XML.XSD.Types
 
 mkSequence :: [SequenceContent] -> Sequence
@@ -17,6 +16,5 @@ mkSequence content
   { _sequenceID = Nothing
   , _sequenceMaxOccurs = Nothing
   , _sequenceMinOccurs = Nothing
-  , _sequenceAttrs = emptyAttrs
   , _sequenceContent = content
   }

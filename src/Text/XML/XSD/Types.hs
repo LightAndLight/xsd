@@ -15,7 +15,6 @@ import Data.Text (Text)
 import qualified Data.Map as M
 import qualified Data.Text as T
 
-import Text.XML.Attrs
 import Text.XML.Language
 import Text.XML.NCName
 import Text.XML.QName
@@ -109,42 +108,36 @@ data ConstraintFacet
   = CFLength
     { _cfID :: Maybe NCName
     , _cfLength :: Length
-    , _cfAttrs :: Attrs
     }
   
   -- | 'minLength' element https://www.w3.org/TR/xmlschema-2/#element-minLength
   | CFMinLength
     { _cfID :: Maybe NCName
     , _cfMinLength :: MinLength
-    , _cfAttrs :: Attrs
     }
   
   -- | 'maxLength' element https://www.w3.org/TR/xmlschema-2/#element-maxLength
   | CFMaxLength
     { _cfID :: Maybe NCName
     , _cfMaxLength :: MaxLength
-    , _cfAttrs :: Attrs
     }
 
   -- | 'pattern' element https://www.w3.org/TR/xmlschema-2/#element-pattern
   | CFPattern
     { _cfID :: Maybe NCName
     , _cfPattern :: Pattern
-    , _cfAttrs :: Attrs
     }
     
   -- | 'enumeration' element https://www.w3.org/TR/xmlschema-2/#element-enumeration
   | CFEnumeration
     { _cfID :: Maybe NCName
     , _cfEnumeration :: Enumeration
-    , _cfAttrs :: Attrs
     }
     
   -- | 'whiteSpace' element https://www.w3.org/TR/xmlschema-2/#element-whiteSpace
   | CFWhiteSpace
     { _cfID :: Maybe NCName
     , _cfWhiteSpace :: WhiteSpace
-    , _cfAttrs :: Attrs
     }
     
   -- | 'maxInclusive' element https://www.w3.org/TR/xmlschema-2/#element-maxInclusive
@@ -159,7 +152,6 @@ data Include
   = Include
   { _incID :: Maybe NCName
   , _incSchemaLocation :: Maybe URI
-  , _incAttrs :: Attrs
   }
   
 -- | 'import' element https://www.w3.org/TR/xmlschema-1/#element-import
@@ -168,7 +160,6 @@ data Import
   { _impID :: Maybe NCName
   , _impNamespace :: Maybe URI
   , _impSchemaLocation :: Maybe URI
-  , _impAttrs :: Attrs
   }
   
 -- | Permitted values when 'simpleType's 'final' attribute is a list
@@ -185,7 +176,6 @@ data STContent
   = STRestriction
   { strsBase :: Maybe QName
   , strsID :: Maybe NCName
-  , strsAttrs :: Attrs
   , strsConstraints :: [ConstraintFacet]
   }
   
@@ -194,7 +184,6 @@ data STContent
   | STList
   { stlsID :: Maybe NCName
   , stlsItemType :: Maybe QName
-  , stlsAttrs :: Attrs
   , stlsTypeElement :: Maybe SimpleType
   }
   
@@ -203,7 +192,6 @@ data STContent
   | STUnion
   { stunID :: Maybe NCName
   , stunMemberTypes :: [QName]
-  , stunAttrs :: Attrs
   , stunTypeElements :: [SimpleType]
   }
 
@@ -225,14 +213,12 @@ data CTContent
   -- | Containing a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent
   = CTSimpleContent
   { _ctscID :: Maybe NCName
-  , _ctscAttrs :: Attrs
   , _ctscContent :: Either SimpleRestriction SimpleExtension
   }
 
   -- | Containing a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent
   | CTComplexContent
   { _ctccID :: Maybe NCName
-  , _ctccAttrs :: Attrs
   , _ctccMixed :: Maybe Bool
   , _ctccContent :: Either ComplexRestriction ComplexExtension
   }
@@ -269,7 +255,6 @@ data Redefine
   = Redefine
   { _redID :: Maybe NCName
   , _redSchemaLocation :: Maybe URI
-  , _redAttrs :: Attrs
   , _redContent :: [RedefineContent]
   }
   
@@ -280,7 +265,6 @@ data Notation
   , _notName :: Maybe NCName
   , _notPublic :: Maybe Token
   , _notSystem :: Maybe URI
-  , _notAttrs :: Attrs
   }
   
 -- | Permitted values for an 'attribute's 'use' attribute
@@ -297,7 +281,6 @@ data Attribute
   , _attRef :: Maybe QName
   , _attType :: Maybe QName
   , _attUse :: Maybe Use
-  , _attAttrs :: Attrs
   , _attSimpleType :: Maybe SimpleType
   }
 
@@ -307,7 +290,6 @@ data AttributeGroup
   { _agID :: Maybe NCName
   , _agName :: Maybe NCName
   , _agRef :: Maybe QName
-  , _agAttrs :: Attrs
   , _agAttributeSpec :: [Either Attribute AttributeGroup]
   , _agAnyAttribute :: Maybe AnyAttribute
   }
@@ -327,7 +309,6 @@ data Element
   , _elNillable :: Maybe Bool
   , _elTypeName :: Maybe QName
   , _elTypeElement :: Maybe (Either SimpleType ComplexType)
-  , _elAttrs :: Attrs
   -- , _elSomethingKeywords
   -- , elRef :: QName
   -- , elSubstitutionGroup :: QName
@@ -347,7 +328,6 @@ mkElement name
   , _elNillable = Nothing
   , _elTypeName = Nothing
   , _elTypeElement = Nothing
-  , _elAttrs = emptyAttrs
   }
 
 {-
@@ -362,7 +342,6 @@ class HasElement s where
   elNillable :: Lens' s (Maybe Bool)
   elTypeName :: Lens' s (Maybe QName)
   elTypeElement :: Lens' s (Either SimpleType ComplexType)
-  elAttrs :: Lens' s (Maybe Text Text)
 -} 
 
 class AsElement s where
@@ -384,7 +363,6 @@ data AnyAttribute
   { _aaID :: Maybe NCName
   , _aaNamespace :: Maybe Namespace
   , _aaProcessContents :: Maybe ProcessContents
-  , _aaAttrs :: Attrs
   }
 
 -- | 'attributeGroup' element within a 'restriction' element within a 'simpleContent'
@@ -393,7 +371,6 @@ data SimpleAttributeGroup
   = SimpleAttributeGroup
   { _sagID :: Maybe NCName
   , _sagRef :: Maybe QName
-  , _sagAttrs :: Attrs
   }
 
 -- | 'restriction' element within a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..restriction
@@ -401,7 +378,6 @@ data SimpleRestriction
   = SimpleRestriction
   { _srsBase :: Maybe QName
   , _srsID :: Maybe NCName
-  , _srsAttrs :: Attrs
   , _srsType :: Maybe SimpleType
   , _srsConstraints :: [ConstraintFacet]
   , _srsAttributeSpec :: [Either Attribute SimpleAttributeGroup]
@@ -429,7 +405,6 @@ data All
   { _allID :: Maybe NCName
   , _allMaxOccurs :: One
   , _allMinOccurs :: Either Zero One
-  , _allAttrs :: Attrs
   , _allContent :: [Element]
   }
 
@@ -441,7 +416,6 @@ data Any
   , _anyMinOccurs :: NonNegative
   , _anyNamespace :: Maybe Namespace
   , _anyProcessContents :: ProcessContents
-  , _anyAttrs :: Attrs
   }
 
 -- | Permitted content of a 'choice' element
@@ -457,7 +431,6 @@ data Choice
   { _choiceID :: Maybe NCName
   , _choiceMaxOccurs :: Occurances
   , _choiceMinOccurs :: NonNegative
-  , _choiceAttrs :: Attrs
   , _choiceContent :: [ChoiceContent]
   }
 
@@ -481,7 +454,6 @@ data Sequence
   { _sequenceID :: Maybe NCName
   , _sequenceMaxOccurs :: Maybe Occurances
   , _sequenceMinOccurs :: Maybe NonNegative
-  , _sequenceAttrs :: Attrs
   , _sequenceContent :: [SequenceContent]
   }
 
@@ -502,7 +474,6 @@ data Group
   , _grMinOccurs :: Maybe NonNegative
   , _grName :: Maybe NCName
   , _grRef :: Maybe QName
-  , _grAttrs :: Attrs
   , _grContent :: Maybe GroupContent
   }
 
@@ -525,7 +496,6 @@ data ComplexExtension
   = ComplexExtension
   { _cexID :: Maybe NCName
   , _cexBase :: Maybe QName
-  , _cexAttrs :: Attrs
   , _cexGroupDefinition :: Maybe CTGroupDefinition
   , _cexAttributeSpec :: [Either Attribute AttributeGroup]
   , _cexAnyAttribute :: Maybe AnyAttribute
@@ -536,7 +506,6 @@ data ComplexRestriction
   = ComplexRestriction
   { _cerID :: Maybe NCName
   , _cerBase :: Maybe QName
-  , _cerAttrs :: Attrs
   , _cerGroupDefinition :: Maybe CTGroupDefinition
   , _cerAttributeSpec :: [Either Attribute AttributeGroup]
   , _cerAnyAttribute :: Maybe AnyAttribute

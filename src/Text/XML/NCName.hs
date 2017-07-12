@@ -1,4 +1,3 @@
-{-# language DeriveLift #-}
 {-# language TemplateHaskell #-}
 
 module Text.XML.NCName

@@ -27,15 +27,16 @@ library
 
   build-depends:      base < 5 && >= 4.5
                       , attoparsec
-                      , text 
-                      , time
+                      , case-insensitive
+                      , containers
                       , lens
+                      , network-uri
+                      , pretty
+                      , text 
+                      , template-haskell >= 2.11
+                      , time
                       , xml-conduit
                       , xml-lens
-                      , containers
-                      , case-insensitive
-                      , pretty
-                      , template-haskell >= 2.11
 
   ghc-options:
                       -Wall

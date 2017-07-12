@@ -6,12 +6,14 @@ module Text.XML.NCName
   , isNCName
   , mkNCName
   , nc
+  , _NCName
   )
   where
 
 import Prelude
 
 import Control.Applicative
+import Control.Lens (Prism', prism')
 import Data.Char (isDigit, isLetter, isAlphaNum)
 import Data.Monoid
 import Data.Text (Text)
@@ -20,7 +22,9 @@ import Language.Haskell.TH.Quote
 import qualified Data.Text as T
 
 -- | XML non-colonized name
-newtype NCName = NCName Text deriving (Eq, Ord, Show)
+newtype NCName
+  = NCName { _getNCName :: Text }
+  deriving (Eq, Ord, Show)
 
 isNCName :: String -> Bool
 isNCName input =
@@ -43,3 +47,7 @@ nc =
   , quoteType = error "`nc` cannot be used as a type"
   , quoteDec = error "`nc` cannot be used as a declaration"
   }
+
+_NCName :: Prism' Text NCName
+_NCName = prism' _getNCName (mkNCName . T.unpack)
+  

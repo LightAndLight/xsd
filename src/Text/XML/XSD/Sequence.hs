@@ -18,6 +18,5 @@ mkSequence content
   , _sequenceMaxOccurs = Nothing
   , _sequenceMinOccurs = Nothing
   , _sequenceAttrs = emptyAttrs
-  , _sequenceAnnotation = Nothing
   , _sequenceContent = content
   }

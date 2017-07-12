@@ -1,20 +1,14 @@
 {-# language LambdaCase #-}
 {-# language TemplateHaskell #-}
+{-# language OverloadedStrings #-}
 
 module Text.XML.XSD.Schema
   ( schema
-  , schemaBody
-  , schemaEntry
   , Schema(..)
   , SchemaPrelude(..)
-  , SchemaEntry(..)
-  , SchemaBody(..)
   , SchemaElement(..)
+  , schemaElementTags
   -- ^ Lenses
-  , sbElement
-  , sbAnnotation
-  , sePrelude
-  , seBody
   , schemaID
   , schemaAttributeFormDefault
   , schemaBlockDefault
@@ -24,20 +18,20 @@ module Text.XML.XSD.Schema
   , schemaVersion
   , schemaXMLLang
   , schemaAttrs
-  , schemaContent 
+  , schemaPrelude 
+  , schemaBody 
   )
   where
 
 import Prelude (Maybe(..), ($), (.))
 
-import Control.Lens hiding (element)
-import Data.Map (Map)
+import Control.Lens
+import Data.CaseInsensitive (CI)
 import Data.Text (Text)
-
-import qualified Data.Map as M
 
 import Text.XML.Attrs
 import Text.XML.NCName
+import Text.XML.XSD.Form
 import Text.XML.XSD.Types
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
@@ -57,14 +51,6 @@ data SchemaPrelude
   = SPInclude Include
   | SPImport Import
   | SPRedefine Redefine
-  | SPAnnotation Annotation
-
-instance AsComplexType SchemaElement where
-  _ComplexType =
-    prism' SEComplexType $
-    \case
-      SEComplexType a -> Just a
-      _ -> Nothing
 
 -- | Permitted 'schema' element values.
 data SchemaElement
@@ -76,42 +62,23 @@ data SchemaElement
   | SEAttribute Attribute
   | SENotation Notation
 
--- | A 'schema' body section
-data SchemaBody
-  = SchemaBody
-  { _sbElement :: SchemaElement
-  , _sbAnnotation :: [Annotation]
-  }
-  
-schemaBody :: SchemaElement -> SchemaBody
-schemaBody el
-  = SchemaBody
-  { _sbElement = el
-  , _sbAnnotation = []
-  }
-  
-makeLenses ''SchemaBody
+schemaElementTags :: [CI Text]
+schemaElementTags =
+  [ "simpleType"
+  , "complexType"
+  , "group"
+  , "attributeGroup"
+  , "element"
+  , "attribute"
+  , "notation"
+  ]
 
-instance AsComplexType SchemaBody where
+instance AsComplexType SchemaElement where
   _ComplexType =
-    prism' (schemaBody . review _ComplexType) $
-    (\v -> _sbElement v ^? _ComplexType)
-
--- | A 'schema' content block
-data SchemaEntry
-  = SchemaEntry
-  { _sePrelude :: [SchemaPrelude]
-  , _seBody :: [SchemaBody]
-  }
-
-makeLenses ''SchemaEntry
-
-schemaEntry :: SchemaEntry
-schemaEntry
-  = SchemaEntry
-  { _sePrelude = []
-  , _seBody = []
-  }
+    prism' SEComplexType $
+    \case
+      SEComplexType a -> Just a
+      _ -> Nothing
 
 -- | 'schema' element https://www.w3.org/TR/xmlschema-1/#element-schema 
 data Schema
@@ -125,11 +92,12 @@ data Schema
   , _schemaVersion :: Maybe Token
   , _schemaXMLLang :: Maybe Language
   , _schemaAttrs :: Attrs
-  , _schemaContent :: [SchemaEntry]
+  , _schemaPrelude :: [SchemaPrelude]
+  , _schemaBody :: [SchemaElement]
   }
 
 -- | An empty 'schema' element
-schema :: [SchemaEntry] -> Schema
+schema :: [SchemaElement] -> Schema
 schema content
   = Schema
   { _schemaID = Nothing
@@ -141,7 +109,8 @@ schema content
   , _schemaVersion = Nothing
   , _schemaXMLLang = Nothing
   , _schemaAttrs = emptyAttrs
-  , _schemaContent = content
+  , _schemaPrelude = []
+  , _schemaBody = content
   }
 
 makeLenses ''Schema

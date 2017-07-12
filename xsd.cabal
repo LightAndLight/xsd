@@ -31,7 +31,9 @@ library
                       , time
                       , lens
                       , xml-conduit
+                      , xml-lens
                       , containers
+                      , case-insensitive
                       , pretty
                       , template-haskell >= 2.11
 
@@ -52,6 +54,7 @@ library
                       Text.XML.XSD.DateTime
                       Text.XML.XSD.ComplexType
                       Text.XML.XSD.Element
+                      Text.XML.XSD.Form
                       Text.XML.XSD.Schema
                       Text.XML.XSD.Sequence
                       Text.XML.XSD.Types

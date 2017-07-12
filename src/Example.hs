@@ -22,13 +22,11 @@ test =
   schema
     @$ ([qn|xmlns:xs|], "http://www.w3.org/2001/XMLSchema")
     $
-    [ schemaEntry & seBody .~
-      [ _ComplexType # mkComplexType (
-          _Sequence # mkSequence
-          [ _Element' # (mkElement [nc|to|] & elTypeName ?~ [qn|xs:string|])
-          , _Element' # (mkElement [nc|from|] & elTypeName ?~ [qn|xs:string|])
-          , _Element' # (mkElement [nc|heading|] & elTypeName ?~ [qn|xs:string|])
-          , _Element' # (mkElement [nc|body|] & elTypeName ?~ [qn|xs:string|])
-          ])
-      ]
+    [ _ComplexType # mkComplexType (
+        _Sequence # mkSequence
+        [ _Element' # (mkElement [nc|to|] & elTypeName ?~ [qn|xs:string|])
+        , _Element' # (mkElement [nc|from|] & elTypeName ?~ [qn|xs:string|])
+        , _Element' # (mkElement [nc|heading|] & elTypeName ?~ [qn|xs:string|])
+        , _Element' # (mkElement [nc|body|] & elTypeName ?~ [qn|xs:string|])
+        ])
     ]

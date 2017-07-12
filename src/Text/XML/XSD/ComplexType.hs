@@ -26,6 +26,5 @@ mkComplexType content
   , _ctFinal = Nothing
   , _ctMixed = Nothing
   , _ctName = Nothing
-  , _ctAnnotation = Nothing
   , _ctContent = content
   }

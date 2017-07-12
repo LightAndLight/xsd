@@ -1,6 +1,7 @@
 {-# language LambdaCase #-}
-{-# language TemplateHaskell #-}
+{-# language MultiParamTypeClasses #-}
 {-# language OverloadedStrings #-}
+{-# language TemplateHaskell #-}
 
 module Text.XML.XSD.Schema
   ( schema
@@ -23,28 +24,96 @@ module Text.XML.XSD.Schema
   )
   where
 
-import Prelude (Maybe(..), ($), (.))
+import Prelude (Maybe(..), ($), (.), fmap, (<$>))
 
 import Control.Lens
 import Data.CaseInsensitive (CI)
 import Data.Text (Text)
 
+import qualified Data.Text as T
+
 import Text.XML.Attrs
 import Text.XML.NCName
+import Text.XML.XSD.Block
+import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 import Text.XML.XSD.Types
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
 data SchemaBlock = SBExtension | SBRestriction | SBSubstitution
 
+showSchemaBlock :: SchemaBlock -> Text
+showSchemaBlock a =
+  case a of
+    SBExtension -> "extension"
+    SBRestriction -> "restrction"
+    SBSubstitution -> "substitution"
+
+parseSchemaBlock :: Text -> Maybe SchemaBlock
+parseSchemaBlock a =
+  case a of
+    "extension" -> Just SBExtension
+    "restriction" -> Just SBRestriction
+    "substitution" -> Just SBSubstitution
+    _ -> Nothing
+
 -- | Permitted 'schemaBlockDefault' values
 data SchemaBlockDefault = SBAll | SBMultiple [SchemaBlock]
+
+showSchemaBlockDefault :: SchemaBlockDefault -> Text
+showSchemaBlockDefault a =
+  case a of
+    SBAll -> "#all"
+    SBMultiple elems -> T.unwords $ fmap showSchemaBlock elems
+
+parseSchemaBlockDefault :: Text -> Maybe SchemaBlockDefault
+parseSchemaBlockDefault a =
+  case a of
+    "" -> Just $ SBMultiple []
+    "#all" -> Just SBAll
+    _ -> SBMultiple <$> traverse parseSchemaBlock (T.words a)
+
+instance AsBlock Text SchemaBlockDefault where
+  _Block = prism' showSchemaBlockDefault parseSchemaBlockDefault
 
 -- | Permitted 'schemaFinalDefault' values when specifiying multiples
 data SchemaFinal = SFExtension | SFRestriction | SFList | SFUnion
 
+showSchemaFinal :: SchemaFinal -> Text
+showSchemaFinal sf =
+  case sf of
+    SFExtension -> "extension"
+    SFRestriction -> "restriction"
+    SFList -> "list"
+    SFUnion -> "union"
+
+parseSchemaFinal :: Text -> Maybe SchemaFinal
+parseSchemaFinal input =
+  case input of
+    "extension" -> Just SFExtension
+    "restriction" -> Just SFRestriction
+    "list" -> Just SFList
+    "union" -> Just SFUnion
+    _ -> Nothing
+
 -- | Permitted 'schemaFinalDefault' values
 data SchemaFinalDefault = SFAll | SFMultiple [SchemaFinal]
+
+showSchemaFinalDefault :: SchemaFinalDefault -> Text
+showSchemaFinalDefault a =
+  case a of
+    SFAll -> "#all"
+    SFMultiple elems -> T.unwords $ fmap showSchemaFinal elems
+
+parseSchemaFinalDefault :: Text -> Maybe SchemaFinalDefault
+parseSchemaFinalDefault a =
+  case a of
+    "" -> Just $ SFMultiple []
+    "#all" -> Just SFAll
+    _ -> SFMultiple <$> traverse parseSchemaFinal (T.words a)
+
+instance AsFinal Text SchemaFinalDefault where
+  _Final = prism' showSchemaFinalDefault parseSchemaFinalDefault
 
 -- | Permitted 'schema' prelude values.
 data SchemaPrelude

@@ -53,8 +53,10 @@ library
                       Text.XML.QName
                       Text.XML.XSD
                       Text.XML.XSD.DateTime
+                      Text.XML.XSD.Block
                       Text.XML.XSD.ComplexType
                       Text.XML.XSD.Element
+                      Text.XML.XSD.Final
                       Text.XML.XSD.Form
                       Text.XML.XSD.Schema
                       Text.XML.XSD.Sequence

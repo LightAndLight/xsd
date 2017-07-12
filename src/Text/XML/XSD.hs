@@ -6,6 +6,8 @@ import Prelude
 
 import Text.XML.Lens
 import Text.XML.NCName
+import Text.XML.XSD.Block
+import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 import Text.XML.XSD.Schema (Schema(..))
 
@@ -29,11 +31,13 @@ documentToXSD document =
       in Just Schema
         { _schemaID = schema ^? attr "id" . _NCName
         , _schemaAttributeFormDefault =
-            schema ^? named "attributeFormDefault" . _Form
-        , _schemaBlockDefault = _
+            schema ^? attr "attributeFormDefault" . _Form
+        , _schemaBlockDefault =
+            schema ^? attr "blockDefault" . _Block
         , _schemaElementFormDefault =
-            schema ^? named "elementFormDefault" . _Form
-        , _schemaFinalDefault = _
+            schema ^? attr "elementFormDefault" . _Form
+        , _schemaFinalDefault =
+            schema ^? attr "finalDefault" . _Final
         , _schemaTargetNamespace = _
         , _schemaVersion = _
         , _schemaXMLLang = _

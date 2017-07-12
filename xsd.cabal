@@ -49,6 +49,7 @@ library
                       src
 
   exposed-modules:    Example
+                      Text.XML.Attrs
                       Text.XML.ID
                       Text.XML.Language
                       Text.XML.NCName

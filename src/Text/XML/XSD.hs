@@ -1,4 +1,5 @@
 {-# language OverloadedStrings #-}
+
 module Text.XML.XSD where
 
 import Prelude
@@ -47,6 +48,7 @@ documentToXSD document =
             schema ^? attr "version" . _Token
         , _schemaXMLLang =
             schema ^? attr "language" . _Language
+        , _schemaAttrs = _
         , _schemaPrelude = _
         , _schemaBody = _
         }

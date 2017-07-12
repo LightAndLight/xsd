@@ -18,6 +18,7 @@ module Text.XML.XSD.Schema
   , schemaTargetNamespace
   , schemaVersion
   , schemaXMLLang
+  , schemaAttrs
   , schemaPrelude 
   , schemaBody 
   )
@@ -31,6 +32,7 @@ import Data.Text (Text)
 
 import qualified Data.Text as T
 
+import Text.XML.Attrs
 import Text.XML.Language
 import Text.XML.NCName
 import Text.XML.Token
@@ -161,6 +163,7 @@ data Schema
   , _schemaTargetNamespace :: Maybe URI
   , _schemaVersion :: Maybe Token
   , _schemaXMLLang :: Maybe Language
+  , _schemaAttrs :: Attrs
   , _schemaPrelude :: [SchemaPrelude]
   , _schemaBody :: [SchemaElement]
   }
@@ -177,8 +180,12 @@ schema content
   , _schemaTargetNamespace = Nothing
   , _schemaVersion = Nothing
   , _schemaXMLLang = Nothing
+  , _schemaAttrs = emptyAttrs
   , _schemaPrelude = []
   , _schemaBody = content
   }
 
 makeLenses ''Schema
+
+instance HasAttrs Schema where
+  attrs = schemaAttrs . attrs

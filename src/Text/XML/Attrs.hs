@@ -3,10 +3,14 @@ module Text.XML.Attrs
   ( Attrs
   , HasAttrs(..)
   , emptyAttrs
+  , (@$)
+  , (@!)
   )
   where
 
-import Control.Lens (Lens', makeLenses)
+import Prelude ((.))
+
+import Control.Lens (Lens', makeLenses, (?~))
 import Data.Map (Map)
 import Data.Text (Text)
 
@@ -26,3 +30,13 @@ class HasAttrs s where
 
 instance HasAttrs Attrs where
   attrs = getAttrs
+
+(@$) :: HasAttrs o => (i -> o) -> (QName, Text) -> i -> o
+(@$) f (name, value) = \i -> f i & attrs . at name ?~ value
+
+infixl 3 @$
+
+(@!) :: HasAttrs o => o -> (QName, Text) -> o
+(@!) f (name, value) = f & attrs . at name ?~ value
+
+infixl 3 @!

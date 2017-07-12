@@ -1,32 +1,43 @@
-{-# language GeneralizedNewtypeDeriving #-}
-module Text.XML.XSD () where
+{-# language OverloadedStrings #-}
+
+module Text.XML.XSD where
 
 import Prelude
 
--- | 'restriction' element https://www.w3.org/TR/xmlschema-1/#element-restriction 
-data Restriction
-  = Restriction
-  { _rsBase :: Maybe QName
-  , _rsID :: Maybe ID
-  , _rsAttrs
-  , _rsSimpleType :: Maybe SimpleType
-  , _rsAnnotation :: Maybe Annotation
-  , _rsConstraints :: [ConstraintFacet]
-  }
+import Text.XML.Lens
+import Text.XML.NCName
+import Text.XML.XSD.Form
+import Text.XML.XSD.Schema (Schema(..))
 
--- | 'list' element https://www.w3.org/TR/xmlschema-1/#element-list 
-data List
-  = List
-  { _lsID :: Maybe ID
-  , _lsItemType :: Maybe QName
-  , _lsSimpleType :: Maybe SimpleType
-  , _lsAttrs :: Map Name Text
-  , _lsAnnotation :: Maybe Annotation
-  }
+import qualified Data.Text as T
+import qualified Text.XML as XML
+import qualified Text.XML.XSD.Schema as XSD
 
--- | 'union' element https://www.w3.org/TR/xmlschema-1/#element-union 
-data Union
-  = Union
-  { _unID :: Maybe ID
-  , _unMemberTypes :: [QName]
-  }
+documentToXSD :: XML.Document -> Maybe XSD.Schema
+documentToXSD document =
+  let
+    schemas = document ^.. root . named "schema"
+  in case schemas of
+    [] -> Nothing
+    (_:_:_) -> error "Multiple schemas present. Need to look this up"
+    [schema] ->
+      let
+        schemaElements =
+          (\name -> schema ^.. entire . named name) <$> XSD.schemaElementTags
+      -- TODO: Decide whether invalid field values should result in a failed
+      -- schema creation
+      in Just Schema
+        { _schemaID = schema ^? attr "id" . _NCName
+        , _schemaAttributeFormDefault =
+            schema ^? named "attributeFormDefault" . _Form
+        , _schemaBlockDefault = _
+        , _schemaElementFormDefault =
+            schema ^? named "elementFormDefault" . _Form
+        , _schemaFinalDefault = _
+        , _schemaTargetNamespace = _
+        , _schemaVersion = _
+        , _schemaXMLLang = _
+        , _schemaAttrs = _
+        , _schemaPrelude = _
+        , _schemaBody = _
+        }

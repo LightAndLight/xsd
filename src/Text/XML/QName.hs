@@ -6,6 +6,7 @@ module Text.XML.QName
   , isQName
   , mkQName
   , qn
+  , nameToQName
   , _qnPrefix
   , _qnLocalPart
   )
@@ -19,6 +20,9 @@ import Data.Monoid
 import Language.Haskell.TH.Quote
 import Text.XML.NCName
 
+import qualified Text.Text as T
+import qualified Text.XML as XML
+
 -- | Fully-qualified XML name
 data QName
   = QName
@@ -26,6 +30,13 @@ data QName
   , _qnLocalPart :: NCName
   }
   deriving (Eq, Ord, Show)
+
+nameToQName :: XML.Name -> QName
+nameToQName n =
+  QName
+  { _qnPrefix = fromJust . mkNCName . T.unpack $ XML.namePrefix n
+  , _qnLocalPart = fromJust . mkNCName . T.unpack $ XML.nameLocalName n
+  }
   
 isQName :: String -> Bool
 isQName = isJust . getQName

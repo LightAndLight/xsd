@@ -10,7 +10,7 @@ module Text.XML.Attrs
 
 import Prelude ((.))
 
-import Control.Lens (Lens', makeLenses, (?~))
+import Control.Lens (Lens', makeLenses, (?~), (&), at)
 import Data.Map (Map)
 import Data.Text (Text)
 

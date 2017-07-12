@@ -37,9 +37,6 @@ data XSDataType
   | TQName
   | TNOTATION
 
--- | XML ID
-type ID = Text
-
 -- | Valid XML URI
 type URI = Text
 
@@ -69,7 +66,7 @@ data AnySimpleType
 -- | 'annotation' element https://www.w3.org/TR/xmlschema-1/#element-annotation
 data Annotation
   = Annotation
-  { _annID :: Maybe ID
+  { _annID :: Maybe NCName
   , _annAttrs :: Attrs
   , _annContent :: [AnnotationContent]
   }
@@ -137,7 +134,7 @@ data WhiteSpace
 data ConstraintFacet
   -- | 'length' element https://www.w3.org/TR/xmlschema-2/#element-length
   = CFLength
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfLength :: Length
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -145,7 +142,7 @@ data ConstraintFacet
   
   -- | 'minLength' element https://www.w3.org/TR/xmlschema-2/#element-minLength
   | CFMinLength
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfMinLength :: MinLength
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -153,7 +150,7 @@ data ConstraintFacet
   
   -- | 'maxLength' element https://www.w3.org/TR/xmlschema-2/#element-maxLength
   | CFMaxLength
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfMaxLength :: MaxLength
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -161,7 +158,7 @@ data ConstraintFacet
 
   -- | 'pattern' element https://www.w3.org/TR/xmlschema-2/#element-pattern
   | CFPattern
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfPattern :: Pattern
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -169,7 +166,7 @@ data ConstraintFacet
     
   -- | 'enumeration' element https://www.w3.org/TR/xmlschema-2/#element-enumeration
   | CFEnumeration
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfEnumeration :: Enumeration
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -177,7 +174,7 @@ data ConstraintFacet
     
   -- | 'whiteSpace' element https://www.w3.org/TR/xmlschema-2/#element-whiteSpace
   | CFWhiteSpace
-    { _cfID :: Maybe ID
+    { _cfID :: Maybe NCName
     , _cfWhiteSpace :: WhiteSpace
     , _cfAttrs :: Attrs
     , _cfAnnotation :: Maybe Annotation
@@ -196,7 +193,7 @@ data Form = Qualified | Unqualified
 -- | 'include' element https://www.w3.org/TR/xmlschema-1/#element-include
 data Include
   = Include
-  { _incID :: Maybe ID
+  { _incID :: Maybe NCName
   , _incSchemaLocation :: Maybe URI
   , _incAttrs :: Attrs
   , _incAnnotation :: Maybe Annotation
@@ -205,7 +202,7 @@ data Include
 -- | 'import' element https://www.w3.org/TR/xmlschema-1/#element-import
 data Import
   = Import
-  { _impID :: Maybe ID
+  { _impID :: Maybe NCName
   , _impNamespace :: Maybe URI
   , _impSchemaLocation :: Maybe URI
   , _impAttrs :: Attrs
@@ -221,7 +218,7 @@ data STFinal = STAll | STList STFFinal
 -- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType 
 data SimpleType
   = SimpleType
-  { _stID :: Maybe ID
+  { _stID :: Maybe NCName
   , _stName :: Maybe NCName
   , _stFinal :: Maybe STFinal
   , _stAnnotation :: Maybe Annotation
@@ -235,7 +232,7 @@ data CTContent
 
   -- | Containing a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent
   = CTSimpleContent
-  { _ctscID :: Maybe ID
+  { _ctscID :: Maybe NCName
   , _ctscAttrs :: Attrs
   , _ctscAnnotation :: Maybe Annotation
   , _ctscContent :: Either SimpleRestriction SimpleExtension
@@ -243,7 +240,7 @@ data CTContent
 
   -- | Containing a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent
   | CTComplexContent
-  { _ctccID :: Maybe ID
+  { _ctccID :: Maybe NCName
   , _ctccAttrs :: Attrs
   , _ctccMixed :: Maybe Bool
   , _ctccAnnotation :: Maybe Annotation
@@ -261,7 +258,7 @@ data CTContent
 -- | 'complexType' element https://www.w3.org/TR/xmlschema-1/#element-complexType
 data ComplexType
   = ComplexType
-  { _ctID :: Maybe ID
+  { _ctID :: Maybe NCName
   , _ctAbstract :: Maybe Bool
   , _ctBlock :: Maybe CTBlock
   , _ctFinal :: Maybe CTFinal
@@ -281,7 +278,7 @@ data RedefineContent
 -- | 'redefine' element https://www.w3.org/TR/xmlschema-1/#element-redefine
 data Redefine
   = Redefine
-  { _redID :: Maybe ID
+  { _redID :: Maybe NCName
   , _redSchemaLocation :: Maybe URI
   , _redAttrs :: Attrs
   , _redContent :: [Either Annotation RedefineContent]
@@ -290,7 +287,7 @@ data Redefine
 -- | 'notation' element https://www.w3.org/TR/xmlschema-1/#element-notation
 data Notation
   = Notation
-  { _notID :: Maybe ID
+  { _notID :: Maybe NCName
   , _notName :: Maybe NCName
   , _notPublic :: Maybe Token
   , _notSystem :: Maybe URI
@@ -304,7 +301,7 @@ data Use = Optional | Prohibited | Required
 -- | 'attribute' element https://www.w3.org/TR/xmlschema-1/#element-attribute 
 data Attribute
   = Attribute
-  { _attID :: Maybe ID
+  { _attID :: Maybe NCName
   , _attDefault :: Maybe Text
   , _attFixed :: Maybe Text
   , _attForm :: Maybe Form
@@ -320,7 +317,7 @@ data Attribute
 -- | 'attributeGroup' element https://www.w3.org/TR/xmlschema-1/#element-attributeGroup
 data AttributeGroup
   = AttributeGroup
-  { _agID :: Maybe ID
+  { _agID :: Maybe NCName
   , _agName :: Maybe NCName
   , _agRef :: Maybe QName
   , _agAttrs :: Attrs
@@ -335,7 +332,7 @@ data Occurances = Unbounded | Bounded NonNegative
 -- | 'element' element https://www.w3.org/TR/xmlschema-1/#element-element
 data Element
   = Element
-  { _elID :: Maybe ID
+  { _elID :: Maybe NCName
   , _elAbstract :: Maybe Bool
   , _elForm :: Maybe Form
   , _elMaxOccurs :: Maybe Occurances
@@ -401,7 +398,7 @@ data ProcessContents = Lax | Skip | Strict
 -- | 'anyAttribute' element https://www.w3.org/TR/xmlschema-1/#element-anyAttribute
 data AnyAttribute
   = AnyAttribute
-  { _aaID :: Maybe ID
+  { _aaID :: Maybe NCName
   , _aaNamespace :: Maybe Namespace
   , _aaProcessContents :: Maybe ProcessContents
   , _aaAttrs :: Attrs
@@ -412,7 +409,7 @@ data AnyAttribute
 -- | element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..attributeGroup
 data SimpleAttributeGroup
   = SimpleAttributeGroup
-  { _sagID :: Maybe ID
+  { _sagID :: Maybe NCName
   , _sagRef :: Maybe QName
   , _sagAttrs :: Attrs
   , _sagAnnotation :: Maybe Annotation
@@ -422,7 +419,7 @@ data SimpleAttributeGroup
 data SimpleRestriction
   = SimpleRestriction
   { _srsBase :: Maybe QName
-  , _srsID :: Maybe ID
+  , _srsID :: Maybe NCName
   , _srsAttrs :: Attrs
   , _srsType :: Maybe SimpleType
   , _srsAnnotation :: Maybe Annotation
@@ -435,7 +432,7 @@ data SimpleRestriction
 data SimpleExtension
   = SimpleExtension
   { _sexBase :: Maybe QName
-  , _sexID :: Maybe ID
+  , _sexID :: Maybe NCName
   , _sexAnnotation :: Maybe Annotation
   , _sexAttributeSpec :: [Either Attribute SimpleAttributeGroup]
   , _sexAnyAttribute :: Maybe AnyAttribute
@@ -450,7 +447,7 @@ data Zero = Zero
 -- | 'all' element https://www.w3.org/TR/xmlschema-1/#element-all
 data All
   = All
-  { _allID :: Maybe ID
+  { _allID :: Maybe NCName
   , _allMaxOccurs :: One
   , _allMinOccurs :: Either Zero One
   , _allAttrs :: Attrs
@@ -461,7 +458,7 @@ data All
 -- | 'any' element https://www.w3.org/TR/xmlschema-1/#element-all
 data Any
   = Any
-  { _anyID :: Maybe ID
+  { _anyID :: Maybe NCName
   , _anyMaxOccurs :: Occurances
   , _anyMinOccurs :: NonNegative
   , _anyNamespace :: Maybe Namespace
@@ -480,7 +477,7 @@ data ChoiceContent
 -- | 'choice' element https://www.w3.org/TR/xmlschema-1/#element-choice
 data Choice
   = Choice
-  { _choiceID :: Maybe ID
+  { _choiceID :: Maybe NCName
   , _choiceMaxOccurs :: Occurances
   , _choiceMinOccurs :: NonNegative
   , _choiceAttrs :: Attrs
@@ -505,7 +502,7 @@ instance AsElement SequenceContent where
 -- | 'sequence' element https://www.w3.org/TR/xmlschema-1/#element-sequence
 data Sequence
   = Sequence
-  { _sequenceID :: Maybe ID
+  { _sequenceID :: Maybe NCName
   , _sequenceMaxOccurs :: Maybe Occurances
   , _sequenceMinOccurs :: Maybe NonNegative
   , _sequenceAttrs :: Attrs
@@ -525,7 +522,7 @@ data GroupContent
 -- | 'group' element https://www.w3.org/TR/xmlschema-1/#element-group
 data Group
   = Group
-  { _grID :: Maybe ID
+  { _grID :: Maybe NCName
   , _grMaxOccurs :: Maybe Occurances
   , _grMinOccurs :: Maybe NonNegative
   , _grName :: Maybe NCName
@@ -552,7 +549,7 @@ instance AsSequence CTGroupDefinition where
 -- | 'extension' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..extension
 data ComplexExtension
   = ComplexExtension
-  { _cexID :: Maybe ID
+  { _cexID :: Maybe NCName
   , _cexBase :: Maybe QName
   , _cexAttrs :: Attrs
   , _cexAnnotation :: Maybe Annotation
@@ -564,7 +561,7 @@ data ComplexExtension
 -- | 'restriction' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..restriction
 data ComplexRestriction
   = ComplexRestriction
-  { _cerID :: Maybe ID
+  { _cerID :: Maybe NCName
   , _cerBase :: Maybe QName
   , _cerAttrs :: Attrs
   , _cerAnnotation :: Maybe Annotation

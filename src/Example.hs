@@ -7,8 +7,7 @@ module Example where
 
 import Prelude
 
-import Control.Lens hiding (element)
-import Data.Text (Text)
+import Control.Lens
 
 import Text.XML.Attrs
 import Text.XML.NCName

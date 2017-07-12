@@ -37,6 +37,7 @@ import Data.Text (Text)
 import qualified Data.Map as M
 
 import Text.XML.Attrs
+import Text.XML.NCName
 import Text.XML.XSD.Types
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
@@ -118,7 +119,7 @@ schemaEntry
 -- | 'schema' element https://www.w3.org/TR/xmlschema-1/#element-schema 
 data Schema
   = Schema
-  { _schemaID :: Maybe ID
+  { _schemaID :: Maybe NCName
   , _schemaAttributeFormDefault :: Maybe Form
   , _schemaBlockDefault :: Maybe SchemaBlockDefault
   , _schemaElementFormDefault :: Maybe Form

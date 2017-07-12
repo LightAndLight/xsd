@@ -14,7 +14,9 @@ import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 import Text.XML.XSD.Schema (Schema(..))
+import Text.XML.XSD.SimpleType
 
+import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Text.XML as XML
 import qualified Text.XML.XSD.Schema as XSD
@@ -48,7 +50,19 @@ documentToXSD document =
             schema ^? attr "version" . _Token
         , _schemaXMLLang =
             schema ^? attr "language" . _Language
-        , _schemaAttrs = _
+        , _schemaAttrs = M.mapKeys nameToQName (schema ^. attrs)
         , _schemaPrelude = _
         , _schemaBody = _
         }
+
+getSimpleType :: XML.Element -> Maybe SimpleType
+getSimpleType e
+  | e ^. localName == "simpleType" =
+      SimpleType
+        { _stID = e ^? attr "id" . _NCName
+        , _stName = e ^? attr "name" . _NCName
+        , _stFinal = e ^? attr "final" . _Final
+        , _stContent = _
+        }
+  | otherwise = Nothing
+  

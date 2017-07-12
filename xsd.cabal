@@ -64,6 +64,7 @@ library
                       Text.XML.XSD.Form
                       Text.XML.XSD.Schema
                       Text.XML.XSD.Sequence
+                      Text.XML.XSD.SimpleType
                       Text.XML.XSD.Types
 
 test-suite doctests

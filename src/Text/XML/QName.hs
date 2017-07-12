@@ -20,7 +20,7 @@ import Data.Monoid
 import Language.Haskell.TH.Quote
 import Text.XML.NCName
 
-import qualified Text.Text as T
+import qualified Data.Text as T
 import qualified Text.XML as XML
 
 -- | Fully-qualified XML name
@@ -34,7 +34,7 @@ data QName
 nameToQName :: XML.Name -> QName
 nameToQName n =
   QName
-  { _qnPrefix = fromJust . mkNCName . T.unpack $ XML.namePrefix n
+  { _qnPrefix = fromJust . mkNCName . T.unpack <$> XML.namePrefix n
   , _qnLocalPart = fromJust . mkNCName . T.unpack $ XML.nameLocalName n
   }
   

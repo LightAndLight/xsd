@@ -2,6 +2,9 @@
 
 module Text.XML.XSD.SimpleType
   ( SimpleType(..)
+  , STContent(..)
+  , STFinal(..)
+  , STFFinal(..)
   -- ^ Lenses
   , stID
   , stName

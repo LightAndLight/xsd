@@ -4,10 +4,12 @@ module Text.XML.XSD where
 
 import Prelude
 
-import Text.XML.Lens
+import Text.XML.Lens as XML
 
+import Text.XML.Attrs as XSD
 import Text.XML.Language
 import Text.XML.NCName
+import Text.XML.QName
 import Text.XML.Token
 import Text.XML.URI
 import Text.XML.XSD.Block
@@ -50,7 +52,8 @@ documentToXSD document =
             schema ^? attr "version" . _Token
         , _schemaXMLLang =
             schema ^? attr "language" . _Language
-        , _schemaAttrs = M.mapKeys nameToQName (schema ^. attrs)
+        , _schemaAttrs =
+            emptyAttrs & XSD.attrs .~ M.mapKeys nameToQName (schema ^. XML.attrs)
         , _schemaPrelude = _
         , _schemaBody = _
         }
@@ -58,7 +61,7 @@ documentToXSD document =
 getSimpleType :: XML.Element -> Maybe SimpleType
 getSimpleType e
   | e ^. localName == "simpleType" =
-      SimpleType
+      Just SimpleType
         { _stID = e ^? attr "id" . _NCName
         , _stName = e ^? attr "name" . _NCName
         , _stFinal = e ^? attr "final" . _Final

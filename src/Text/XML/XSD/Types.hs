@@ -1,5 +1,6 @@
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language LambdaCase #-}
+{-# language MultiParamTypeClasses #-}
 {-# language RankNTypes #-}
 {-# language TemplateHaskell #-}
 {-# language OverloadedStrings #-}
@@ -8,19 +9,16 @@ module Text.XML.XSD.Types where
 import Prelude
 
 import Control.Lens hiding (Choice, element)
-import Data.Char
-import Data.Map (Map)
 import Data.Text (Text)
 
-import qualified Data.Map as M
 import qualified Data.Text as T
 
 import Text.XML.Attrs
-import Text.XML.Language
 import Text.XML.NCName
 import Text.XML.QName
 import Text.XML.Token
 import Text.XML.URI
+import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 
 -- | XSD primitive datatypes
@@ -174,8 +172,38 @@ data Import
 -- | Permitted values when 'simpleType's 'final' attribute is a list
 data STFFinal = STFList | STFUnion | STFRestriction
 
+parseSTFFinal :: Text -> Maybe STFFinal
+parseSTFFinal i =
+  case i of
+    "list" -> Just STFList
+    "union" -> Just STFUnion
+    "restriction" -> Just STFRestriction
+    _ -> Nothing
+
+showSTFFinal :: STFFinal -> Text
+showSTFFinal i =
+  case i of
+    STFList -> "list"
+    STFUnion -> "union"
+    STFRestriction -> "restriction"
+
 -- | Permitted values of 'simpleType's 'final' attribute
-data STFinal = STAll | STMultiple STFFinal
+data STFinal = STAll | STMultiple [STFFinal]
+
+parseSTFinal :: Text -> Maybe STFinal
+parseSTFinal i =
+  case i of
+    "#all" -> Just STAll
+    _ -> STMultiple <$> traverse parseSTFFinal (T.words i)
+
+showSTFinal :: STFinal -> Text
+showSTFinal a =
+  case a of
+    STAll -> "#all"
+    STMultiple elems -> T.unwords $ fmap showSTFFinal elems
+
+instance AsFinal Text STFinal where
+  _Final = prism' showSTFinal parseSTFinal
 
 -- | Enumeration for possible contents of 'simpleType' element 
 -- | https://www.w3.org/TR/xmlschema-1/#element-simpleType

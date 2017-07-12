@@ -33,7 +33,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XML.Attrs
+import Text.XML.Language
 import Text.XML.NCName
+import Text.XML.Token
 import Text.XML.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final

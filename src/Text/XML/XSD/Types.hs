@@ -16,6 +16,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 
 import Text.XML.Attrs
+import Text.XML.Language
 import Text.XML.NCName
 import Text.XML.QName
 import Text.XML.Token
@@ -42,9 +43,6 @@ data XSDataType
   | TAnyURI
   | TQName
   | TNOTATION
-
--- | Valid langage
-type Language = Text
 
 -- | Valid regular expression
 type Regex = Text

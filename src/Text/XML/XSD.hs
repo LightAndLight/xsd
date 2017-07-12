@@ -5,6 +5,8 @@ module Text.XML.XSD where
 import Prelude
 
 import Text.XML.Lens
+
+import Text.XML.Language
 import Text.XML.NCName
 import Text.XML.Token
 import Text.XML.URI
@@ -44,7 +46,8 @@ documentToXSD document =
             schema ^? attr "targetNamespace" . _URI
         , _schemaVersion =
             schema ^? attr "version" . _Token
-        , _schemaXMLLang = _
+        , _schemaXMLLang =
+            schema ^? attr "language" . _Language
         , _schemaAttrs = _
         , _schemaPrelude = _
         , _schemaBody = _

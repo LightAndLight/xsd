@@ -32,6 +32,7 @@ library
                       , lens
                       , network-uri
                       , pretty
+                      , regex
                       , text 
                       , template-haskell >= 2.11
                       , time
@@ -50,6 +51,7 @@ library
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.ID
+                      Text.XML.Language
                       Text.XML.NCName
                       Text.XML.QName
                       Text.XML.Token

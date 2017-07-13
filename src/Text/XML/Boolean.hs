@@ -2,26 +2,33 @@
 module Text.XML.Boolean
   ( isBoolean
   , mkBoolean
+  , parseBoolean
   , _Boolean
   )
   where
 
 import Prelude
 
-import Data.Text (Text)
+import Data.Functor (($>))
+import Control.Applicative ((<|>))
 import Control.Lens (Prism', prism')
+import Data.Attoparsec.Text (parseOnly)
+import Data.Maybe (isJust)
+import Data.Text (Text)
+import Text.Parser.Char
+import Text.Parser.Combinators
 
-import qualified Data.Text as T
+isBoolean :: Text -> Bool
+isBoolean = isJust . mkBoolean
 
-isBoolean :: String -> Bool
-isBoolean = flip elem ["true", "false"]
-
-mkBoolean :: String -> Maybe Bool
+mkBoolean :: Text -> Maybe Bool
 mkBoolean a =
-  case a of
-    "true" -> Just True
-    "false" -> Just False
+  case parseOnly parseBoolean a of
+    Right b -> Just b
     _ -> Nothing
 
+parseBoolean :: CharParsing m => m Bool
+parseBoolean = (try (text "true" $> True) <|> (text "false" $> False)) <* eof
+
 _Boolean :: Prism' Text Bool
-_Boolean = prism' (\a -> if a then "true" else "false") (mkBoolean . T.unpack)
+_Boolean = prism' (\a -> if a then "true" else "false") mkBoolean

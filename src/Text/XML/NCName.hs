@@ -2,6 +2,7 @@
 
 module Text.XML.NCName
   ( NCName
+  , _getNCName
   , isNCName
   , mkNCName
   , nc

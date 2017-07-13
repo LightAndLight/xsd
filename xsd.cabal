@@ -50,9 +50,11 @@ library
 
   exposed-modules:    Example
                       Text.XML.Attrs
+                      Text.XML.Boolean
                       Text.XML.ID
                       Text.XML.Language
                       Text.XML.NCName
+                      Text.XML.NonNegative
                       Text.XML.QName
                       Text.XML.Token
                       Text.XML.XSD

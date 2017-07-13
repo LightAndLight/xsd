@@ -17,7 +17,6 @@ import Prelude
 import Control.Applicative ((<|>))
 import Control.Lens (Prism', prism')
 import Data.Attoparsec.Text (parseOnly)
-import Data.Functor (($>))
 import Data.Maybe (isJust)
 import Data.Monoid
 import Data.Text (Text)
@@ -28,13 +27,7 @@ import Text.Parser.Combinators
 
 import qualified Data.Text as T
 
-data Sign = Pos | Neg deriving Lift
-
-showSign :: Sign -> Text
-showSign a =
-  case a of
-    Pos -> "+"
-    Neg -> "-"
+import Text.XML.Numbers.Sign
 
 data Decimal
   = Decimal
@@ -62,7 +55,6 @@ mkDecimal a =
 parseDecimal :: CharParsing m => m Decimal
 parseDecimal =
   let
-    sign = try (char '+' $> Pos) <|> try (char '-' $> Neg) <|> pure Pos
   in Decimal <$>
      sign <*>
      fmap T.pack (some digit) <*>

@@ -31,6 +31,7 @@ library
                       , containers
                       , lens
                       , network-uri
+                      , parsers
                       , pretty
                       , regex
                       , text 
@@ -48,6 +49,7 @@ library
   hs-source-dirs:
                       src
 
+  other-modules:      Text.XML.Numbers.Sign
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.Boolean

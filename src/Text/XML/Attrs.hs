@@ -3,6 +3,7 @@ module Text.XML.Attrs
   ( Attrs
   , HasAttrs(..)
   , emptyAttrs
+  , toNameTextMap
   , (@$)
   , (@!)
   )
@@ -15,6 +16,7 @@ import Data.Map (Map)
 import Data.Text (Text)
 
 import qualified Data.Map as M
+import qualified Text.XML as XML
 
 import Text.XML.QName
 
@@ -24,6 +26,9 @@ makeLenses ''Attrs
 
 emptyAttrs :: Attrs
 emptyAttrs = Attrs M.empty
+
+toNameTextMap :: Attrs -> Map XML.Name Text
+toNameTextMap (Attrs a) = M.mapKeys qNameToName a
 
 class HasAttrs s where
   attrs :: Lens' s (Map QName Text)

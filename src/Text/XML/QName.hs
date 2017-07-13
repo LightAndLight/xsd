@@ -1,5 +1,8 @@
-{-# language TemplateHaskell #-}
+{-# language LambdaCase #-}
+{-# language OverloadedStrings #-}
 {-# language QuasiQuotes #-}
+{-# language RecordWildCards #-}
+{-# language TemplateHaskell #-}
 
 module Text.XML.QName
   ( QName
@@ -7,16 +10,20 @@ module Text.XML.QName
   , mkQName
   , qn
   , nameToQName
+  , qNameToName
   , _qnPrefix
   , _qnLocalPart
+  , _QName
   )
   where
 
 import Prelude
 
 import Control.Applicative
+import Control.Lens
 import Data.Maybe
 import Data.Monoid
+import Data.Text (Text)
 import Language.Haskell.TH.Quote
 import Text.XML.NCName
 
@@ -31,11 +38,22 @@ data QName
   }
   deriving (Eq, Ord, Show)
 
+makeLenses ''QName
+
 nameToQName :: XML.Name -> QName
 nameToQName n =
   QName
   { _qnPrefix = fromJust . mkNCName . T.unpack <$> XML.namePrefix n
   , _qnLocalPart = fromJust . mkNCName . T.unpack $ XML.nameLocalName n
+  }
+
+-- TODO: Namespacing problems?
+qNameToName :: QName -> XML.Name
+qNameToName QName{..} =
+  XML.Name
+  { namePrefix = _getNCName <$> _qnPrefix
+  , nameLocalName = _getNCName _qnLocalPart
+  , nameNamespace = Nothing
   }
   
 isQName :: String -> Bool
@@ -73,3 +91,9 @@ qn =
   , quoteDec = error "`qn` cannot be used as a declaration"
   }
 
+_QName :: Prism' Text QName
+_QName = prism'
+  (\s -> fromMaybe ""
+    (s ^? qnPrefix . _Just . re _NCName) <>
+    (s ^. qnLocalPart . re _NCName))
+  (mkQName . T.unpack)

@@ -1,3 +1,4 @@
+{-# language DeriveLift #-}
 {-# language LambdaCase #-}
 {-# language OverloadedStrings #-}
 {-# language QuasiQuotes #-}
@@ -8,6 +9,7 @@ module Text.XML.QName
   ( QName
   , isQName
   , mkQName
+  , parseQName
   , qn
   , nameToQName
   , qNameToName
@@ -21,10 +23,15 @@ import Prelude
 
 import Control.Applicative
 import Control.Lens
+import Data.Attoparsec.Text (parseOnly)
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import Language.Haskell.TH.Quote
+import Language.Haskell.TH.Syntax
+import Text.Parser.Char
+import Text.Parser.Combinators
+
 import Text.XML.NCName
 
 import qualified Data.Text as T
@@ -36,15 +43,15 @@ data QName
   { _qnPrefix :: Maybe NCName
   , _qnLocalPart :: NCName
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Lift, Ord, Show)
 
 makeLenses ''QName
 
 nameToQName :: XML.Name -> QName
 nameToQName n =
   QName
-  { _qnPrefix = fromJust . mkNCName . T.unpack <$> XML.namePrefix n
-  , _qnLocalPart = fromJust . mkNCName . T.unpack $ XML.nameLocalName n
+  { _qnPrefix = fromJust . mkNCName <$> XML.namePrefix n
+  , _qnLocalPart = fromJust . mkNCName $ XML.nameLocalName n
   }
 
 -- TODO: Namespacing problems?
@@ -56,36 +63,25 @@ qNameToName QName{..} =
   , nameNamespace = Nothing
   }
   
-isQName :: String -> Bool
-isQName = isJust . getQName
+isQName :: Text -> Bool
+isQName = isJust . mkQName
 
-mkQName :: String -> Maybe QName
-mkQName str = do
-  (before, after) <- getQName str
-  liftA2 QName (mkNCName <$> before) (mkNCName after)
-  
--- This is needed internally because we don't have an instance for `Lift Text`
--- for use in the quasiquoter
-getQName :: String -> Maybe (Maybe String, String)
-getQName str =
-  let (before, after) = break (== ':') str
-  in case after of
-    [] -> if isNCName before
-      then Just (Nothing, before)
-      else Nothing
-    ':' : rest -> if isNCName before && isNCName rest
-      then Just (Just before, rest)
-      else Nothing
+mkQName :: Text -> Maybe QName
+mkQName str =
+  case parseOnly parseQName str of
+    Right q -> Just q
     _ -> Nothing
+
+parseQName :: CharParsing m => m QName
+parseQName = QName <$> optional (parseNCName <* char ':') <*> parseNCName <* eof
 
 qn :: QuasiQuoter
 qn =
   QuasiQuoter
   { quoteExp = \str ->
-      case getQName str of
-        Just (Nothing, r) -> [| QName Nothing $(quoteExp nc r) |]
-        Just (Just l, r) -> [| QName (Just $(quoteExp nc l)) $(quoteExp nc r) |]
-        _ -> fail $ str <> " is not a valid QName"
+      case mkQName (T.pack str) of
+        Just q -> [| q |]
+        Nothing -> fail $ str <> " is not a valid QName"
   , quotePat = error "`qn` cannot be used as a pattern"
   , quoteType = error "`qn` cannot be used as a type"
   , quoteDec = error "`qn` cannot be used as a declaration"
@@ -96,4 +92,4 @@ _QName = prism'
   (\s -> fromMaybe ""
     (s ^? qnPrefix . _Just . re _NCName) <>
     (s ^. qnLocalPart . re _NCName))
-  (mkQName . T.unpack)
+  mkQName

@@ -68,4 +68,3 @@ getSimpleType e
         , _stContent = _
         }
   | otherwise = Nothing
-  

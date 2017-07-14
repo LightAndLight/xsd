@@ -4,144 +4,137 @@
 {-# language RankNTypes #-}
 {-# language TemplateHaskell #-}
 {-# language OverloadedStrings #-}
+{-# language RecordWildCards #-}
+{-# language QuasiQuotes #-}
 module Text.XML.XSD.Types where
 
 import Prelude
 
 import Control.Lens hiding (Choice, element)
+import Data.Maybe
+import Data.Monoid ((<>))
 import Data.Text (Text)
 
 import qualified Data.Text as T
 
 import Text.XML.Attrs
+import Text.XML.Boolean
+import Text.XML.Decimal
+import Text.XML.Float
+import Text.XML.ID
 import Text.XML.NCName
+import Text.XML.NonNegative
 import Text.XML.QName
+import Text.XML.Regex
 import Text.XML.Token
 import Text.XML.URI
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 
+import qualified Data.Map as M
+import qualified Text.XML as XML
+import qualified Text.XML.Lens as XML
+
 -- | XSD primitive datatypes
-data XSDataType
-  = TString
-  | TBoolean
-  | TDecimal
-  | TFloat
-  | TDouble
-  | TDateTime
-  | TTime
-  | TDate
-  | TGYearMonth
-  | TGYear
-  | TGMonthDay
-  | TGDay
-  | TGMonth
-  | THexBinary
-  | TBase64Binary
-  | TAnyURI
-  | TQName
-  | TNOTATION
-
--- | Valid regular expression
-type Regex = Text
-
--- | Valid XML attribute name
-type Name = Text
-
--- | Non-negative integer
-newtype NonNegative = NonNegative Int
-  deriving Num
+data PrimitiveType
+  = PString
+  | PBoolean
+  | PDecimal
+  | PFloat
+  | PDouble
+  | PDateTime
+  | PTime
+  | PDate
+  | PGYearMonth
+  | PGYear
+  | PGMonthDay
+  | PGDay
+  | PGMonth
+  | PHexBinary
+  | PBase64Binary
+  | PAnyURI
+  | PQName
+  | PNOTATION
 
 -- | Some text and its associated XSD type
 data AnySimpleType
   = AnySimpleType
   { _astValue :: Text
-  , _astType :: XSDataType
+  , _astType :: PrimitiveType
   }
 
--- | 'length'-specific attributes
-data Length
-  = Length
-  { _lnValue :: NonNegative
-  , _lnFixed :: Bool
-  }
-  
--- | 'minLength'-specific attributes
-data MinLength
-  = MinLength
-  { _mnlnValue :: NonNegative
-  , _mnlnFixed :: Bool
-  }
-  
--- | 'maxLength'-specific attributes
-data MaxLength
-  = MaxLength
-  { _mxlnValue :: NonNegative
-  , _mxlnFixed :: Bool
-  }
-
--- | 'pattern'-specific attributes
-data Pattern
-  = Pattern
-  { _ptValue :: Regex
-  }
-
--- | 'enumeration'-specific attributes
-data Enumeration
-  = Enumeration
-  { _enValue :: AnySimpleType
-  }
+_AnySimpleType :: Prism' (Text, PrimitiveType) AnySimpleType
+_AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
+  \(txt, ty) ->
+    let
+      test = case ty of
+        PString -> const True
+        PBoolean -> isBoolean 
+        PDecimal -> isDecimal
+        PFloat -> isFloat
+        PDouble -> _
+        PDateTime -> _
+        PTime -> _
+        PDate -> _
+        PGYearMonth -> _
+        PGYear -> _
+        PGMonthDay -> _
+        PGDay -> _
+        PGMonth -> _
+        PHexBinary -> _
+        PBase64Binary -> _
+        PAnyURI -> _
+        PQName -> isQName
+        PNOTATION -> _
+     in if test txt then Just (AnySimpleType txt ty) else Nothing
 
 -- | Permitted 'whiteSpace' 'value's
 data WhiteSpaceSetting = Collapse | Replace | Preserve
-
--- | 'whiteSpace'-specific attributes
-data WhiteSpace
-  = WhiteSpace
-  { _wsValue :: WhiteSpaceSetting
-  , _wsFixed :: Bool
-  }
 
 data ConstraintFacet
   -- | 'length' element https://www.w3.org/TR/xmlschema-2/#element-length
   = CFLength
     { _cfID :: Maybe NCName
-    , _cfLength :: Length
+    , _cfLengthValue :: NonNegative
+    , _cfLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
   
   -- | 'minLength' element https://www.w3.org/TR/xmlschema-2/#element-minLength
   | CFMinLength
     { _cfID :: Maybe NCName
-    , _cfMinLength :: MinLength
+    , _cfMinLengthValue :: NonNegative
+    , _cfMinLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
   
   -- | 'maxLength' element https://www.w3.org/TR/xmlschema-2/#element-maxLength
   | CFMaxLength
     { _cfID :: Maybe NCName
-    , _cfMaxLength :: MaxLength
+    , _cfMaxLengthValue :: NonNegative
+    , _cfMaxLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
 
   -- | 'pattern' element https://www.w3.org/TR/xmlschema-2/#element-pattern
   | CFPattern
     { _cfID :: Maybe NCName
-    , _cfPattern :: Pattern
+    , _cfPatternValue :: Regex
     , _cfAttrs :: Attrs
     }
     
   -- | 'enumeration' element https://www.w3.org/TR/xmlschema-2/#element-enumeration
   | CFEnumeration
     { _cfID :: Maybe NCName
-    , _cfEnumeration :: Enumeration
+    , _cfEnumerationValue :: AnySimpleType
     , _cfAttrs :: Attrs
     }
     
   -- | 'whiteSpace' element https://www.w3.org/TR/xmlschema-2/#element-whiteSpace
   | CFWhiteSpace
     { _cfID :: Maybe NCName
-    , _cfWhiteSpace :: WhiteSpace
+    , _cfWhiteSpaceValue :: WhiteSpaceSetting
+    , _cfWhiteSpaceFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
     
@@ -151,6 +144,82 @@ data ConstraintFacet
   -- | 'minExclusive' element https://www.w3.org/TR/xmlschema-2/#element-minInclusive
   -- | 'totalDigits' element https://www.w3.org/TR/xmlschema-2/#element-totalDigits
   -- | 'fractionDigits' element https://www.w3.org/TR/xmlschema-2/#element-fractionDigits
+
+cfAttrs :: Lens' ConstraintFacet Attrs
+cfAttrs = lens _cfAttrs (\s a -> s { _cfAttrs = a })
+
+instance HasAttrs ConstraintFacet where
+  attrs = cfAttrs . attrs
+
+constraintFacetElementName :: Getter ConstraintFacet XML.Name
+constraintFacetElementName =
+  to $ \case
+    CFLength{} -> "length"
+    CFMinLength{} -> "minLength"
+    CFMaxLength{} -> "maxLength"
+    CFPattern{} -> "pattern"
+    CFEnumeration{} -> "enumeration"
+    CFWhiteSpace{} -> "whiteSpace"
+
+constraintFacetAttrs :: Getter ConstraintFacet [Maybe (QName, Text)]
+constraintFacetAttrs =
+  to $ \case
+    CFLength{..} ->
+      [ Just ([qn|value|], _NonNegative # _cfLengthValue)
+      , (,) [qn|fixed|] . (_Boolean #) <$> _cfLengthFixed
+      ]
+    CFMinLength{..} ->
+      [ Just ([qn|value|], _NonNegative # _cfMinLengthValue)
+      , (,) [qn|fixed|] . (_Boolean #) <$> _cfMinLengthFixed
+      ]
+    CFMaxLength{..} ->
+      [ Just ([qn|value|], _NonNegative # _cfMaxLengthValue)
+      , (,) [qn|fixed|] . (_Boolean #) <$> _cfMaxLengthFixed
+      ]
+    CFPattern{..} ->
+      [ Just ([qn|value|], _Regex # _cfPatternValue)
+      ]
+    CFEnumeration{..} -> _
+    CFWhiteSpace{..} -> _
+    
+toElement
+  :: HasAttrs a
+  => Getter a XML.Name
+  -> Getter a [Maybe (QName, Text)]
+  -> Getter a [b]
+  -> Getter b XML.Element
+  -> a
+  -> XML.Element
+toElement getName maybeAttrs getContents getElement a =
+  XML.Element
+  { elementName = a ^. getName
+  , elementAttributes =
+      M.mapKeys qNameToName $
+      (a ^. attrs) `M.union` M.fromList (a ^.. maybeAttrs . folded . _Just)
+  , elementNodes = a ^.. getContents . folded . getElement . re XML._Element
+  }
+
+constraintFacetToElement :: ConstraintFacet -> XML.Element
+constraintFacetToElement =
+  toElement
+    constraintFacetElementName
+    constraintFacetAttrs
+    (like [])
+    (re _Void)
+
+elementToConstraintFacet :: XML.Element -> Maybe ConstraintFacet
+elementToConstraintFacet XML.Element{..} =
+  case elementName of
+    "length" -> _
+    "minLength" -> _
+    "maxLength" -> _
+    "pattern" -> _
+    "enumeration" -> _
+    "whiteSpace" -> _
+    
+
+_ConstraintFacet :: Prism' XML.Element ConstraintFacet
+_ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
 
 -- | 'include' element https://www.w3.org/TR/xmlschema-1/#element-include
 data Include
@@ -211,29 +280,55 @@ data STContent
   -- | Containing a 'restriction' element
   -- | https://www.w3.org/TR/xmlschema-1/#element-restriction
   = STRestriction
-  { strsBase :: Maybe QName
-  , strsID :: Maybe NCName
-  , strsAttrs :: Attrs
-  , strsConstraints :: [ConstraintFacet]
+  { _stcID :: Maybe NCName
+  , _stcAttrs :: Attrs
+  , _strsBase :: Maybe QName
+  , _strsConstraints :: [ConstraintFacet]
   }
   
   -- | Containing a 'list' element
   -- | https://www.w3.org/TR/xmlschema-1/#element-list
   | STList
-  { stlsID :: Maybe NCName
-  , stlsItemType :: Maybe QName
-  , stlsAttrs :: Attrs
-  , stlsTypeElement :: Maybe SimpleType
+  { _stcID :: Maybe NCName
+  , _stcAttrs :: Attrs
+  , _stlsItemType :: Maybe QName
+  , _stlsTypeElement :: Maybe SimpleType
   }
   
   -- | Containing a 'union' element
   -- | https://www.w3.org/TR/xmlschema-1/#element-union
   | STUnion
-  { stunID :: Maybe NCName
-  , stunMemberTypes :: [QName]
-  , stunAttrs :: Attrs
-  , stunTypeElements :: [SimpleType]
+  { _stcID :: Maybe NCName
+  , _stcAttrs :: Attrs
+  , _stunMemberTypes :: [QName]
+  , _stunTypeElements :: [SimpleType]
   }
+
+stcID :: Lens' STContent (Maybe NCName)
+stcID = lens _stcID (\s a -> s { _stcID = a})
+
+stcAttrs :: Lens' STContent Attrs
+stcAttrs = lens _stcAttrs (\s a -> s { _stcAttrs = a})
+
+stContentToElement :: STContent -> XML.Element
+stContentToElement STRestriction{..} =
+  XML.Element
+  { elementName = "restriction"
+  , elementAttributes =
+      M.fromList (catMaybes
+      [ (,) "id" <$> _stcID ^? _Just . re _NCName
+      , (,) "base" <$> _strsBase ^? _Just . re _QName
+      ]) `M.union`
+      toNameTextMap _stcAttrs
+  , elementNodes =
+    _strsConstraints ^.. folded . re _ConstraintFacet . re XML._Element
+  }
+  
+stContentToElement STList{..} = _
+stContentToElement STUnion{..} = _
+
+_SimpleTypeContent :: Prism' XML.Element STContent
+_SimpleTypeContent = prism' stContentToElement _
 
 -- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType
 data SimpleType

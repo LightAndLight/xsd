@@ -53,6 +53,9 @@ library
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.Boolean
+                      Text.XML.Decimal
+                      Text.XML.Double
+                      Text.XML.Float
                       Text.XML.ID
                       Text.XML.Language
                       Text.XML.NCName

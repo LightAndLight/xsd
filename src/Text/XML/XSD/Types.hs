@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Text.XML.Attrs
 import Text.XML.Boolean
 import Text.XML.Decimal
+import Text.XML.Double
 import Text.XML.Float
 import Text.XML.ID
 import Text.XML.NCName
@@ -72,7 +73,7 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PBoolean -> isBoolean 
         PDecimal -> isDecimal
         PFloat -> isFloat
-        PDouble -> _
+        PDouble -> isDouble
         PDateTime -> _
         PTime -> _
         PDate -> _

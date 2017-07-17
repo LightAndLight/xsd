@@ -24,6 +24,7 @@ import Text.XML.DateTime
 import Text.XML.Decimal
 import Text.XML.Double
 import Text.XML.Float
+import Text.XML.HexBinary
 import Text.XML.ID
 import Text.XML.NCName
 import Text.XML.NonNegative
@@ -85,9 +86,9 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PGMonthDay -> _
         PGDay -> _
         PGMonth -> _
-        PHexBinary -> _
+        PHexBinary -> isHexBinary
         PBase64Binary -> _
-        PAnyURI -> _
+        PAnyURI -> isURI
         PQName -> isQName
         PNOTATION -> _
      in if test txt then Just (AnySimpleType txt ty) else Nothing

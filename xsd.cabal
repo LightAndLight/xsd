@@ -27,6 +27,7 @@ library
 
   build-depends:      base < 5 && >= 4.5
                       , attoparsec
+                      , bytestring
                       , case-insensitive
                       , containers
                       , lens
@@ -57,6 +58,7 @@ library
                       Text.XML.Decimal
                       Text.XML.Double
                       Text.XML.Float
+                      Text.XML.HexBinary
                       Text.XML.ID
                       Text.XML.Language
                       Text.XML.NCName

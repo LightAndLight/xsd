@@ -19,6 +19,7 @@ import qualified Data.Text as T
 
 import Text.XML.Attrs
 import Text.XML.Boolean
+import Text.XML.Date
 import Text.XML.Decimal
 import Text.XML.Double
 import Text.XML.Float
@@ -27,6 +28,7 @@ import Text.XML.NCName
 import Text.XML.NonNegative
 import Text.XML.QName
 import Text.XML.Regex
+import Text.XML.Time
 import Text.XML.Token
 import Text.XML.URI
 import Text.XML.XSD.Final
@@ -75,8 +77,8 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PFloat -> isFloat
         PDouble -> isDouble
         PDateTime -> _
-        PTime -> _
-        PDate -> _
+        PTime -> isTime
+        PDate -> isDate
         PGYearMonth -> _
         PGYear -> _
         PGMonthDay -> _

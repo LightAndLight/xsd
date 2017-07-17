@@ -53,6 +53,7 @@ library
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.Boolean
+                      Text.XML.Date
                       Text.XML.Decimal
                       Text.XML.Double
                       Text.XML.Float
@@ -62,6 +63,7 @@ library
                       Text.XML.NonNegative
                       Text.XML.QName
                       Text.XML.Regex
+                      Text.XML.Time
                       Text.XML.Token
                       Text.XML.XSD
                       Text.XML.XSD.DateTime

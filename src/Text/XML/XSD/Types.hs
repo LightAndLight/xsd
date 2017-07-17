@@ -18,6 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XML.Attrs
+import Text.XML.Base64Binary
 import Text.XML.Boolean
 import Text.XML.Date
 import Text.XML.DateTime
@@ -87,7 +88,7 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PGDay -> _
         PGMonth -> _
         PHexBinary -> isHexBinary
-        PBase64Binary -> _
+        PBase64Binary -> isBase64Binary
         PAnyURI -> isURI
         PQName -> isQName
         PNOTATION -> _

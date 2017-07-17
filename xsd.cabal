@@ -28,6 +28,7 @@ library
   build-depends:      base < 5 && >= 4.5
                       , attoparsec
                       , bytestring
+                      , base64-bytestring
                       , case-insensitive
                       , containers
                       , lens
@@ -53,6 +54,7 @@ library
   other-modules:      Text.XML.Numbers.Sign
   exposed-modules:    Example
                       Text.XML.Attrs
+                      Text.XML.Base64Binary
                       Text.XML.Boolean
                       Text.XML.Date
                       Text.XML.Decimal

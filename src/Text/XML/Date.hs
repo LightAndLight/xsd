@@ -7,7 +7,7 @@ module Text.XML.Date
   , isDate
   , mkDate
   , parseDate
-  , dt
+  , date
   , _Date
   )
   where
@@ -60,16 +60,16 @@ parseDate =
   (read <$> replicateM 2 digit) <*
   eof
 
-dt :: QuasiQuoter
-dt =
+date :: QuasiQuoter
+date =
   QuasiQuoter
   { quoteExp = \str ->
       case mkDate (T.pack str) of
         Just d -> [| d |]
         Nothing -> fail $ str <> " is not a valid Date"
-  , quotePat = error "`dt` cannot be used as a pattern"
-  , quoteType = error "`dt` cannot be used as a type"
-  , quoteDec = error "`dt` cannot be used as a declaration"
+  , quotePat = error "`date` cannot be used as a pattern"
+  , quoteType = error "`date` cannot be used as a type"
+  , quoteDec = error "`date` cannot be used as a declaration"
   }
 
 _Date :: Prism' Text Date

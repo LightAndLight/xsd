@@ -8,7 +8,7 @@ module Text.XML.Time
   , isTime
   , mkTime
   , parseTime
-  , tm
+  , time
   , _Time
   )
   where
@@ -96,16 +96,16 @@ parseTimeZone = try utc <|> nonutc
       parseField <*>
       parseField
 
-tm :: QuasiQuoter
-tm =
+time :: QuasiQuoter
+time =
   QuasiQuoter
   { quoteExp = \str ->
       case mkTime (T.pack str) of
         Just t -> [| t |]
         Nothing -> fail $ str <> " is not a valid Time"
-  , quotePat = error "`tm` cannot be used as a pattern"
-  , quoteType = error "`tm` cannot be used as a type"
-  , quoteDec = error "`tm` cannot be used as a declaration"
+  , quotePat = error "`time` cannot be used as a pattern"
+  , quoteType = error "`time` cannot be used as a type"
+  , quoteDec = error "`time` cannot be used as a declaration"
   }
 
 _Time :: Prism' Text Time

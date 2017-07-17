@@ -1,4 +1,5 @@
 {-# language DeriveLift #-}
+{-# language LambdaCase #-}
 {-# language RecordWildCards #-}
 {-# language TemplateHaskell #-}
 
@@ -37,12 +38,21 @@ showSign Plus = "+"
 showSign Minus = "-"
 
 data TimeZone
-  = TimeZone
-  { _tzSign :: Sign
-  , _tzHours :: Int
-  , _tzMinutes :: Int
-  }
+  = UTC
+  | TimeZone Sign Int Int
   deriving Lift
+
+_tzSign :: TimeZone -> Maybe Sign
+_tzSign UTC = Nothing
+_tzSign (TimeZone s _ _) = Just s
+
+_tzHours :: TimeZone -> Int
+_tzHours UTC = 0
+_tzHours (TimeZone _ h _) = h
+
+_tzMinutes :: TimeZone -> Int
+_tzMinutes UTC = 0
+_tzMinutes (TimeZone _ _ m) = m
 
 data Time
   = Time
@@ -77,11 +87,14 @@ parseTime =
   eof
 
 parseTimeZone :: CharParsing m => m TimeZone
-parseTimeZone =
-  TimeZone <$>
-  ((try (char '-') $> Minus) <|> (char '+' $> Plus)) <*>
-  parseField <*>
-  parseField
+parseTimeZone = try utc <|> nonutc
+  where
+    utc = char 'Z' $> UTC
+    nonutc = 
+      TimeZone <$>
+      ((try (char '-') $> Minus) <|> (char '+' $> Plus)) <*>
+      parseField <*>
+      parseField
 
 tm :: QuasiQuoter
 tm =
@@ -104,10 +117,12 @@ _Time =
      show _tmSecond <>
      maybe "" ((<>) "." . show) _tmFraction <>
      maybe ""
-       (\TimeZone{..} ->
-          showSign _tzSign <>
-          show _tzHours <>
-          show _tzMinutes)
+       (\case
+           UTC -> "+00:00"
+           TimeZone s h m ->
+             showSign s <>
+             show h <>
+             show m)
        _tmTimeZone
   )
   mkTime

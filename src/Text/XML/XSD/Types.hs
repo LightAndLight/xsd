@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Text.XML.Attrs
 import Text.XML.Boolean
 import Text.XML.Date
+import Text.XML.DateTime
 import Text.XML.Decimal
 import Text.XML.Double
 import Text.XML.Float
@@ -76,7 +77,7 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PDecimal -> isDecimal
         PFloat -> isFloat
         PDouble -> isDouble
-        PDateTime -> _
+        PDateTime -> isDateTime
         PTime -> isTime
         PDate -> isDate
         PGYearMonth -> _

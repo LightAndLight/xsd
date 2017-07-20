@@ -1,3 +1,5 @@
+{-# language ExistentialQuantification #-}
+{-# language FlexibleContexts #-}
 {-# language GeneralizedNewtypeDeriving #-}
 {-# language LambdaCase #-}
 {-# language MultiParamTypeClasses #-}
@@ -11,8 +13,7 @@ module Text.XML.XSD.Types where
 import Prelude
 
 import Control.Lens hiding (Choice, element)
-import Data.Maybe
-import Data.Monoid ((<>))
+import Data.Char
 import Data.Text (Text)
 
 import qualified Data.Text as T
@@ -34,12 +35,7 @@ import Text.XML.Regex
 import Text.XML.Time
 import Text.XML.Token
 import Text.XML.URI
-import Text.XML.XSD.Final
 import Text.XML.XSD.Form
-
-import qualified Data.Map as M
-import qualified Text.XML as XML
-import qualified Text.XML.Lens as XML
 
 -- | XSD primitive datatypes
 data PrimitiveType
@@ -51,16 +47,18 @@ data PrimitiveType
   | PDateTime
   | PTime
   | PDate
+  | PHexBinary
+  | PBase64Binary
+  | PAnyURI
+  | PQName
+  {-
+  | PNOTATION
   | PGYearMonth
   | PGYear
   | PGMonthDay
   | PGDay
   | PGMonth
-  | PHexBinary
-  | PBase64Binary
-  | PAnyURI
-  | PQName
-  | PNOTATION
+  -}
 
 -- | Some text and its associated XSD type
 data AnySimpleType
@@ -82,20 +80,32 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
         PDateTime -> isDateTime
         PTime -> isTime
         PDate -> isDate
+        PHexBinary -> isHexBinary
+        PBase64Binary -> isBase64Binary
+        PAnyURI -> isURI
+        PQName -> isQName
+        {-
         PGYearMonth -> _
         PGYear -> _
         PGMonthDay -> _
         PGDay -> _
         PGMonth -> _
-        PHexBinary -> isHexBinary
-        PBase64Binary -> isBase64Binary
-        PAnyURI -> isURI
-        PQName -> isQName
         PNOTATION -> _
+        -}
      in if test txt then Just (AnySimpleType txt ty) else Nothing
 
 -- | Permitted 'whiteSpace' 'value's
-data WhiteSpaceSetting = Collapse | Replace | Preserve
+data WhiteSpaceSetting = Collapse | Replace | Preserve deriving Show
+
+_WhiteSpace :: Prism' Text WhiteSpaceSetting
+_WhiteSpace =
+  prism'
+    (T.pack . fmap toLower . show)
+    (\case
+        "collapse" -> Just Collapse
+        "replace" -> Just Replace
+        "preservce" -> Just Preserve
+        _ -> Nothing)
 
 data ConstraintFacet
   -- | 'length' element https://www.w3.org/TR/xmlschema-2/#element-length
@@ -132,7 +142,7 @@ data ConstraintFacet
   -- | 'enumeration' element https://www.w3.org/TR/xmlschema-2/#element-enumeration
   | CFEnumeration
     { _cfID :: Maybe NCName
-    , _cfEnumerationValue :: AnySimpleType
+    , _cfEnumerationValue :: QName
     , _cfAttrs :: Attrs
     }
     
@@ -157,81 +167,11 @@ cfAttrs = lens _cfAttrs (\s a -> s { _cfAttrs = a })
 instance HasAttrs ConstraintFacet where
   attrs = cfAttrs . attrs
 
-constraintFacetElementName :: Getter ConstraintFacet XML.Name
-constraintFacetElementName =
-  to $ \case
-    CFLength{} -> "length"
-    CFMinLength{} -> "minLength"
-    CFMaxLength{} -> "maxLength"
-    CFPattern{} -> "pattern"
-    CFEnumeration{} -> "enumeration"
-    CFWhiteSpace{} -> "whiteSpace"
-
-constraintFacetAttrs :: Getter ConstraintFacet [Maybe (QName, Text)]
-constraintFacetAttrs =
-  to $ \case
-    CFLength{..} ->
-      [ Just ([qn|value|], _NonNegative # _cfLengthValue)
-      , (,) [qn|fixed|] . (_Boolean #) <$> _cfLengthFixed
-      ]
-    CFMinLength{..} ->
-      [ Just ([qn|value|], _NonNegative # _cfMinLengthValue)
-      , (,) [qn|fixed|] . (_Boolean #) <$> _cfMinLengthFixed
-      ]
-    CFMaxLength{..} ->
-      [ Just ([qn|value|], _NonNegative # _cfMaxLengthValue)
-      , (,) [qn|fixed|] . (_Boolean #) <$> _cfMaxLengthFixed
-      ]
-    CFPattern{..} ->
-      [ Just ([qn|value|], _Regex # _cfPatternValue)
-      ]
-    CFEnumeration{..} -> _
-    CFWhiteSpace{..} -> _
-    
-toElement
-  :: HasAttrs a
-  => Getter a XML.Name
-  -> Getter a [Maybe (QName, Text)]
-  -> Getter a [b]
-  -> Getter b XML.Element
-  -> a
-  -> XML.Element
-toElement getName maybeAttrs getContents getElement a =
-  XML.Element
-  { elementName = a ^. getName
-  , elementAttributes =
-      M.mapKeys qNameToName $
-      (a ^. attrs) `M.union` M.fromList (a ^.. maybeAttrs . folded . _Just)
-  , elementNodes = a ^.. getContents . folded . getElement . re XML._Element
-  }
-
-constraintFacetToElement :: ConstraintFacet -> XML.Element
-constraintFacetToElement =
-  toElement
-    constraintFacetElementName
-    constraintFacetAttrs
-    (like [])
-    (re _Void)
-
-elementToConstraintFacet :: XML.Element -> Maybe ConstraintFacet
-elementToConstraintFacet XML.Element{..} =
-  case elementName of
-    "length" -> _
-    "minLength" -> _
-    "maxLength" -> _
-    "pattern" -> _
-    "enumeration" -> _
-    "whiteSpace" -> _
-    
-
-_ConstraintFacet :: Prism' XML.Element ConstraintFacet
-_ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
-
 -- | 'include' element https://www.w3.org/TR/xmlschema-1/#element-include
 data Include
   = Include
   { _incID :: Maybe NCName
-  , _incSchemaLocation :: Maybe URI
+  , _incSchemaLocation :: URI
   , _incAttrs :: Attrs
   }
   
@@ -247,38 +187,8 @@ data Import
 -- | Permitted values when 'simpleType's 'final' attribute is a list
 data STFFinal = STFList | STFUnion | STFRestriction
 
-parseSTFFinal :: Text -> Maybe STFFinal
-parseSTFFinal i =
-  case i of
-    "list" -> Just STFList
-    "union" -> Just STFUnion
-    "restriction" -> Just STFRestriction
-    _ -> Nothing
-
-showSTFFinal :: STFFinal -> Text
-showSTFFinal i =
-  case i of
-    STFList -> "list"
-    STFUnion -> "union"
-    STFRestriction -> "restriction"
-
 -- | Permitted values of 'simpleType's 'final' attribute
 data STFinal = STAll | STMultiple [STFFinal]
-
-parseSTFinal :: Text -> Maybe STFinal
-parseSTFinal i =
-  case i of
-    "#all" -> Just STAll
-    _ -> STMultiple <$> traverse parseSTFFinal (T.words i)
-
-showSTFinal :: STFinal -> Text
-showSTFinal a =
-  case a of
-    STAll -> "#all"
-    STMultiple elems -> T.unwords $ fmap showSTFFinal elems
-
-instance AsFinal Text STFinal where
-  _Final = prism' showSTFinal parseSTFinal
 
 -- | Enumeration for possible contents of 'simpleType' element 
 -- | https://www.w3.org/TR/xmlschema-1/#element-simpleType
@@ -289,6 +199,7 @@ data STContent
   { _stcID :: Maybe NCName
   , _stcAttrs :: Attrs
   , _strsBase :: Maybe QName
+  , _strsTypeElement :: Maybe SimpleType
   , _strsConstraints :: [ConstraintFacet]
   }
   
@@ -306,45 +217,33 @@ data STContent
   | STUnion
   { _stcID :: Maybe NCName
   , _stcAttrs :: Attrs
-  , _stunMemberTypes :: [QName]
-  , _stunTypeElements :: [SimpleType]
+  , _stunMemberTypes :: Maybe [QName]
+  , _stunTypeElements :: Maybe [SimpleType]
   }
 
 stcID :: Lens' STContent (Maybe NCName)
 stcID = lens _stcID (\s a -> s { _stcID = a})
 
+instance HasID STContent where
+  id' = stcID
+
 stcAttrs :: Lens' STContent Attrs
 stcAttrs = lens _stcAttrs (\s a -> s { _stcAttrs = a})
 
-stContentToElement :: STContent -> XML.Element
-stContentToElement STRestriction{..} =
-  XML.Element
-  { elementName = "restriction"
-  , elementAttributes =
-      M.fromList (catMaybes
-      [ (,) "id" <$> _stcID ^? _Just . re _NCName
-      , (,) "base" <$> _strsBase ^? _Just . re _QName
-      ]) `M.union`
-      toNameTextMap _stcAttrs
-  , elementNodes =
-    _strsConstraints ^.. folded . re _ConstraintFacet . re XML._Element
-  }
-  
-stContentToElement STList{..} = _
-stContentToElement STUnion{..} = _
+instance HasAttrs STContent where
+  attrs = stcAttrs . attrs
 
-_SimpleTypeContent :: Prism' XML.Element STContent
-_SimpleTypeContent = prism' stContentToElement _
 
 -- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType
 data SimpleType
   = SimpleType
   { _stID :: Maybe NCName
+  , _stAttrs :: Attrs
   , _stName :: Maybe NCName
   , _stFinal :: Maybe STFinal
   , _stContent :: STContent
   }
-  
+
 data CTBlock = CTBExtension | CTBRestriction
 data CTFinal = CTFExtension | CTFRestriction
 
@@ -368,16 +267,24 @@ data CTContent
 
   -- | Containing an optional group definition and attribute specifications
   | CTGroupContent
-  { _ctgdGroupDefinition :: Maybe CTGroupDefinition
-  , _ctgdAttributeSpec :: [Either Attribute AttributeGroup]
-  , _ctgdAnyAttribute :: Maybe AnyAttribute
+  { _ctgcGroupDefinition :: Maybe CTGroupDefinition
+  , _ctgcAttributeSpec :: [Either Attribute AttributeGroup]
+  , _ctgcAnyAttribute :: Maybe AnyAttribute
   }
-  
+
+emptyCTGroupContent :: CTContent
+emptyCTGroupContent =
+  CTGroupContent
+  { _ctgcGroupDefinition = Nothing
+  , _ctgcAttributeSpec = []
+  , _ctgcAnyAttribute = Nothing
+  }
 
 -- | 'complexType' element https://www.w3.org/TR/xmlschema-1/#element-complexType
 data ComplexType
   = ComplexType
   { _ctID :: Maybe NCName
+  , _ctAttrs :: Attrs
   , _ctAbstract :: Maybe Bool
   , _ctBlock :: Maybe CTBlock
   , _ctFinal :: Maybe CTFinal
@@ -397,7 +304,7 @@ data RedefineContent
 data Redefine
   = Redefine
   { _redID :: Maybe NCName
-  , _redSchemaLocation :: Maybe URI
+  , _redSchemaLocation :: URI
   , _redAttrs :: Attrs
   , _redContent :: [RedefineContent]
   }
@@ -452,7 +359,7 @@ data Element
   , _elForm :: Maybe Form
   , _elMaxOccurs :: Maybe Occurances
   , _elMinOccurs :: Maybe NonNegative
-  , _elName :: NCName
+  , _elName :: Maybe NCName
   , _elNillable :: Maybe Bool
   , _elTypeName :: Maybe QName
   , _elTypeElement :: Maybe (Either SimpleType ComplexType)
@@ -472,31 +379,12 @@ mkElement name
   , _elForm = Nothing
   , _elMaxOccurs = Nothing
   , _elMinOccurs = Nothing
-  , _elName = name
+  , _elName = Just name
   , _elNillable = Nothing
   , _elTypeName = Nothing
   , _elTypeElement = Nothing
   , _elAttrs = emptyAttrs
   }
-
-{-
-class HasElement s where
-  element :: Lens' s Element
-  elID :: Lens' s (Maybe ID)
-  elAbstract :: Lens' s (Maybe Bool)
-  elForm :: Lens' s (Maybe Form)
-  elMaxOccurs :: Lens' s (Maybe Occurances)
-  elMinOccurs :: Lens' s (Maybe NonNegative)
-  elName :: Lens' s Name
-  elNillable :: Lens' s (Maybe Bool)
-  elTypeName :: Lens' s (Maybe QName)
-  elTypeElement :: Lens' s (Either SimpleType ComplexType)
-  elAttrs :: Lens' s (Maybe Text Text)
--} 
-
-class AsElement s where
-  _Element :: NCName -> Review s Element
-  _Element' :: Prism' s Element
 
 -- | Permitted values of when 'namespace' attribute is a list
 data Locality = TargetNamespace | Local
@@ -505,7 +393,7 @@ data Locality = TargetNamespace | Local
 data Namespace = NSAny | NSOther | NSList [Either URI Locality]
 
 -- | Permitted values of the 'processContents' attribute
-data ProcessContents = Lax | Skip | Strict
+data ProcessContents = PCLax | PCSkip | PCStrict
 
 -- | 'anyAttribute' element https://www.w3.org/TR/xmlschema-1/#element-anyAttribute
 data AnyAttribute
@@ -537,11 +425,12 @@ data SimpleRestriction
   , _srsAnyAttribute :: Maybe AnyAttribute
   }
 
--- | 'extension' element within a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..restriction
+-- | 'extension' element within a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..extension
 data SimpleExtension
   = SimpleExtension
   { _sexBase :: Maybe QName
   , _sexID :: Maybe NCName
+  , _sexAttrs :: Attrs
   , _sexAttributeSpec :: [Either Attribute SimpleAttributeGroup]
   , _sexAnyAttribute :: Maybe AnyAttribute
   }
@@ -556,20 +445,20 @@ data Zero = Zero
 data All
   = All
   { _allID :: Maybe NCName
-  , _allMaxOccurs :: One
-  , _allMinOccurs :: Either Zero One
+  , _allMaxOccurs :: Maybe One
+  , _allMinOccurs :: Maybe (Either Zero One)
   , _allAttrs :: Attrs
   , _allContent :: [Element]
   }
 
--- | 'any' element https://www.w3.org/TR/xmlschema-1/#element-all
+-- | 'any' element https://www.w3.org/TR/xmlschema-1/#element-any
 data Any
   = Any
   { _anyID :: Maybe NCName
-  , _anyMaxOccurs :: Occurances
-  , _anyMinOccurs :: NonNegative
+  , _anyMaxOccurs :: Maybe Occurances
+  , _anyMinOccurs :: Maybe NonNegative
   , _anyNamespace :: Maybe Namespace
-  , _anyProcessContents :: ProcessContents
+  , _anyProcessContents :: Maybe ProcessContents
   , _anyAttrs :: Attrs
   }
 
@@ -584,8 +473,8 @@ data ChoiceContent
 data Choice
   = Choice
   { _choiceID :: Maybe NCName
-  , _choiceMaxOccurs :: Occurances
-  , _choiceMinOccurs :: NonNegative
+  , _choiceMaxOccurs :: Maybe Occurances
+  , _choiceMinOccurs :: Maybe NonNegative
   , _choiceAttrs :: Attrs
   , _choiceContent :: [ChoiceContent]
   }
@@ -597,13 +486,6 @@ data SequenceContent
   | SCSequence Sequence
   | SCAny Any
 
-instance AsElement SequenceContent where
-  _Element name = unto (\el -> SCElement el { _elName = name })
-  _Element' = prism' SCElement $
-    \case
-      SCElement a -> Just a
-      _ -> Nothing
-  
 -- | 'sequence' element https://www.w3.org/TR/xmlschema-1/#element-sequence
 data Sequence
   = Sequence
@@ -613,9 +495,6 @@ data Sequence
   , _sequenceAttrs :: Attrs
   , _sequenceContent :: [SequenceContent]
   }
-
-class AsSequence s where
-  _Sequence :: Prism' s Sequence
 
 -- | Permitted content of a 'group' element
 data GroupContent
@@ -642,13 +521,6 @@ data CTGroupDefinition
   | CTGDChoice Choice
   | CTGDSequence Sequence
 
-instance AsSequence CTGroupDefinition where
-  _Sequence = prism'
-    CTGDSequence $
-    \case
-      CTGDSequence a -> Just a
-      _ -> Nothing
-
 -- | 'extension' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..extension
 data ComplexExtension
   = ComplexExtension
@@ -663,24 +535,91 @@ data ComplexExtension
 -- | 'restriction' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..restriction
 data ComplexRestriction
   = ComplexRestriction
-  { _cerID :: Maybe NCName
-  , _cerBase :: Maybe QName
-  , _cerAttrs :: Attrs
-  , _cerGroupDefinition :: Maybe CTGroupDefinition
-  , _cerAttributeSpec :: [Either Attribute AttributeGroup]
-  , _cerAnyAttribute :: Maybe AnyAttribute
+  { _crsID :: Maybe NCName
+  , _crsBase :: Maybe QName
+  , _crsAttrs :: Attrs
+  , _crsGroupDefinition :: Maybe CTGroupDefinition
+  , _crsAttributeSpec :: [Either Attribute AttributeGroup]
+  , _crsAnyAttribute :: Maybe AnyAttribute
   }
 
-instance AsSequence CTContent where
-  _Sequence = prism'
-    (\v -> CTGroupContent
-      { _ctgdGroupDefinition = Just $ _Sequence # v
-      , _ctgdAttributeSpec = []
-      , _ctgdAnyAttribute = Nothing
-      })
-    (maybe Nothing (^? _Sequence) . _ctgdGroupDefinition)
-
-class AsComplexType s where
-  _ComplexType :: Prism' s ComplexType
-
 makeClassy ''Element
+makeLenses ''SimpleType
+makeLenses ''SimpleRestriction
+makeLenses ''SimpleExtension
+makeLenses ''SimpleAttributeGroup
+makeLenses ''ComplexType
+makeLenses ''ComplexRestriction
+makeLenses ''ComplexExtension
+makeLenses ''AnyAttribute
+makeLenses ''Group
+makeLenses ''All
+makeLenses ''Any
+makeLenses ''Choice
+makeLenses ''Sequence
+makeLenses ''AttributeGroup
+makeLenses ''Attribute
+makeLenses ''Notation
+makeLenses ''Import
+makeLenses ''Include
+makeLenses ''Redefine
+
+instance HasAttrs SimpleType where
+  attrs = stAttrs . attrs
+  
+instance HasAttrs SimpleRestriction where
+  attrs = srsAttrs . attrs
+  
+instance HasAttrs SimpleExtension where
+  attrs = sexAttrs . attrs
+  
+instance HasAttrs SimpleAttributeGroup where
+  attrs = sagAttrs . attrs
+
+instance HasAttrs ComplexType where
+  attrs = ctAttrs . attrs
+  
+instance HasAttrs ComplexRestriction where
+  attrs = crsAttrs . attrs
+  
+instance HasAttrs ComplexExtension where
+  attrs = cexAttrs . attrs
+  
+instance HasAttrs AnyAttribute where
+  attrs = aaAttrs . attrs
+  
+instance HasAttrs Group where
+  attrs = grAttrs . attrs
+  
+instance HasAttrs All where
+  attrs = allAttrs . attrs
+  
+instance HasAttrs Any where
+  attrs = anyAttrs . attrs
+  
+instance HasAttrs Choice where
+  attrs = choiceAttrs . attrs
+  
+instance HasAttrs Sequence where
+  attrs = sequenceAttrs . attrs
+  
+instance HasAttrs AttributeGroup where
+  attrs = agAttrs . attrs
+  
+instance HasAttrs Attribute where
+  attrs = attAttrs . attrs
+
+instance HasAttrs Element where
+  attrs = elAttrs . attrs
+  
+instance HasAttrs Notation where
+  attrs = notAttrs . attrs
+  
+instance HasAttrs Import where
+  attrs = impAttrs . attrs
+  
+instance HasAttrs Include where
+  attrs = incAttrs . attrs
+  
+instance HasAttrs Redefine where
+  attrs = redAttrs . attrs

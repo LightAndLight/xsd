@@ -15,6 +15,8 @@ module Text.XML.XSD.ComplexType
 
 import Prelude (Maybe(..))
 
+import Text.XML.Attrs
+import Text.XML.XSD.Lens
 import Text.XML.XSD.Types
 
 mkComplexType :: CTContent -> ComplexType
@@ -26,5 +28,6 @@ mkComplexType content
   , _ctFinal = Nothing
   , _ctMixed = Nothing
   , _ctName = Nothing
+  , _ctAttrs = emptyAttrs
   , _ctContent = content
   }

@@ -70,12 +70,19 @@ library
                       Text.XML.Time
                       Text.XML.Token
                       Text.XML.XSD
+                      Text.XML.XSD.Attribute
+                      Text.XML.XSD.AttributeGroup
                       Text.XML.XSD.DateTime
                       Text.XML.XSD.Block
                       Text.XML.XSD.ComplexType
                       Text.XML.XSD.Element
                       Text.XML.XSD.Final
                       Text.XML.XSD.Form
+                      Text.XML.XSD.Group
+                      Text.XML.XSD.Lens
+                      Text.XML.XSD.Namespace
+                      Text.XML.XSD.Notation
+                      Text.XML.XSD.ProcessContents
                       Text.XML.XSD.Schema
                       Text.XML.XSD.Sequence
                       Text.XML.XSD.SimpleType

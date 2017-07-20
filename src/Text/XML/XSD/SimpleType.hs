@@ -2,6 +2,7 @@
 
 module Text.XML.XSD.SimpleType
   ( SimpleType(..)
+  , AsSimpleType(..)
   , STContent(..)
   , STFinal(..)
   , STFFinal(..)
@@ -13,7 +14,5 @@ module Text.XML.XSD.SimpleType
   )
   where
 
-import Control.Lens (makeLenses)
+import Text.XML.XSD.Lens
 import Text.XML.XSD.Types
-
-makeLenses ''SimpleType

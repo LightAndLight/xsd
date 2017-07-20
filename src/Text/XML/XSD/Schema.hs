@@ -1,14 +1,17 @@
-{-# language LambdaCase #-}
-{-# language MultiParamTypeClasses #-}
-{-# language OverloadedStrings #-}
-{-# language TemplateHaskell #-}
+{-#
+language
+
+LambdaCase, MultiParamTypeClasses, OverloadedStrings, TemplateHaskell,
+RecordWildCards, QuasiQuotes
+#-}
 
 module Text.XML.XSD.Schema
   ( schema
   , Schema(..)
+  , _Schema
   , SchemaPrelude(..)
   , SchemaElement(..)
-  , schemaElementTags
+  , _SchemaElement
   -- ^ Lenses
   , schemaID
   , schemaAttributeFormDefault
@@ -24,60 +27,65 @@ module Text.XML.XSD.Schema
   )
   where
 
-import Prelude (Maybe(..), ($), (.), fmap, (<$>))
+import Prelude
 
+import Control.Applicative
 import Control.Lens
-import Data.CaseInsensitive (CI)
 import Data.Text (Text)
 
+import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified Text.XML as XML
+import qualified Text.XML.Lens as XML
 
 import Text.XML.Attrs
 import Text.XML.Language
 import Text.XML.NCName
+import Text.XML.QName
 import Text.XML.Token
 import Text.XML.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 import Text.XML.XSD.Types
+import Text.XML.XSD.Lens
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
 data SchemaBlock = SBExtension | SBRestriction | SBSubstitution
 
-showSchemaBlock :: SchemaBlock -> Text
-showSchemaBlock a =
-  case a of
-    SBExtension -> "extension"
-    SBRestriction -> "restrction"
-    SBSubstitution -> "substitution"
-
-parseSchemaBlock :: Text -> Maybe SchemaBlock
-parseSchemaBlock a =
-  case a of
-    "extension" -> Just SBExtension
-    "restriction" -> Just SBRestriction
-    "substitution" -> Just SBSubstitution
-    _ -> Nothing
-
 -- | Permitted 'schemaBlockDefault' values
 data SchemaBlockDefault = SBAll | SBMultiple [SchemaBlock]
 
-showSchemaBlockDefault :: SchemaBlockDefault -> Text
-showSchemaBlockDefault a =
-  case a of
-    SBAll -> "#all"
-    SBMultiple elems -> T.unwords $ fmap showSchemaBlock elems
-
-parseSchemaBlockDefault :: Text -> Maybe SchemaBlockDefault
-parseSchemaBlockDefault a =
-  case a of
-    "" -> Just $ SBMultiple []
-    "#all" -> Just SBAll
-    _ -> SBMultiple <$> traverse parseSchemaBlock (T.words a)
-
 instance AsBlock Text SchemaBlockDefault where
   _Block = prism' showSchemaBlockDefault parseSchemaBlockDefault
+    where
+      showSchemaBlock :: SchemaBlock -> Text
+      showSchemaBlock a =
+        case a of
+          SBExtension -> "extension"
+          SBRestriction -> "restriction"
+          SBSubstitution -> "substitution"
+
+      parseSchemaBlock :: Text -> Maybe SchemaBlock
+      parseSchemaBlock a =
+        case a of
+          "extension" -> Just SBExtension
+          "restriction" -> Just SBRestriction
+          "substitution" -> Just SBSubstitution
+          _ -> Nothing
+          
+      showSchemaBlockDefault :: SchemaBlockDefault -> Text
+      showSchemaBlockDefault a =
+        case a of
+          SBAll -> "#all"
+          SBMultiple elems -> T.unwords $ fmap showSchemaBlock elems
+
+      parseSchemaBlockDefault :: Text -> Maybe SchemaBlockDefault
+      parseSchemaBlockDefault a =
+        case a of
+          "" -> Just $ SBMultiple []
+          "#all" -> Just SBAll
+          _ -> SBMultiple <$> traverse parseSchemaBlock (T.words a)
 
 -- | Permitted 'schemaFinalDefault' values when specifiying multiples
 data SchemaFinal = SFExtension | SFRestriction | SFList | SFUnion
@@ -124,6 +132,19 @@ data SchemaPrelude
   | SPImport Import
   | SPRedefine Redefine
 
+_SchemaPrelude :: Prism' XML.Element SchemaPrelude
+_SchemaPrelude =
+  prism'
+    (\case
+        SPInclude i -> review _Include i
+        SPImport i -> review _Import i
+        SPRedefine r -> review _Redefine r)
+
+    (\sp ->
+        (SPInclude <$> preview _Include sp) <|>
+        (SPImport <$> preview _Import sp) <|>
+        (SPRedefine <$> preview _Redefine sp))
+
 -- | Permitted 'schema' element values.
 data SchemaElement
   = SESimpleType SimpleType
@@ -134,16 +155,38 @@ data SchemaElement
   | SEAttribute Attribute
   | SENotation Notation
 
-schemaElementTags :: [CI Text]
-schemaElementTags =
-  [ "simpleType"
-  , "complexType"
-  , "group"
-  , "attributeGroup"
-  , "element"
-  , "attribute"
-  , "notation"
-  ]
+schemaElementToElement :: SchemaElement -> XML.Element
+schemaElementToElement e =
+  case e of
+    SESimpleType a -> review _SimpleType a
+    SEComplexType a -> review _ComplexType a
+    SEGroup a -> review _Group a
+    SEAttributeGroup a -> review _AttributeGroup a
+    SEElement a -> review _Element a
+    SEAttribute a -> review _Attribute a
+    SENotation a -> review _Notation a
+
+elementToSchemaElement :: XML.Element -> Maybe SchemaElement
+elementToSchemaElement e =
+  case XML.elementName e of
+    "simpleType" -> fmap SESimpleType (e ^? _SimpleType)
+    "complexType" -> fmap SEComplexType (e ^? _ComplexType)
+    "group" -> fmap SEGroup (e ^? _Group)
+    "attributeGroup" -> fmap SEAttributeGroup (e ^? _AttributeGroup)
+    "element" -> fmap SEElement (e ^? _Element)
+    "attribute" -> fmap SEAttribute (e ^? _Attribute)
+    "notation" -> fmap SENotation (e ^? _Notation)
+    _ -> Nothing
+
+_SchemaElement :: Prism' XML.Element SchemaElement
+_SchemaElement = prism' schemaElementToElement elementToSchemaElement
+
+instance AsSimpleType SchemaElement where
+  _SimpleType =
+    prism' SESimpleType $
+    \case
+      SESimpleType a -> Just a
+      _ -> Nothing
 
 instance AsComplexType SchemaElement where
   _ComplexType =
@@ -189,3 +232,64 @@ makeLenses ''Schema
 
 instance HasAttrs Schema where
   attrs = schemaAttrs . attrs
+
+_Schema :: Prism' XML.Element Schema
+_Schema = prism' se es
+  where
+    se :: Schema -> XML.Element
+    se = toElement
+      ToElement
+      { teName = const "schema"
+      , teAttrs = \Schema{..} ->
+        [ (,) [qn|id|] . review _NCName <$> _schemaID
+        , (,) [qn|attributeFormDefault|] . review _Form <$> _schemaAttributeFormDefault
+        , (,) [qn|blockDefault|] . review _Block <$> _schemaBlockDefault
+        , (,) [qn|elementFormDefault|] . review _Form <$> _schemaElementFormDefault
+        , (,) [qn|finalDefault|] . review _Final <$> _schemaFinalDefault
+        , (,) [qn|targetNamespace|] . review _URI <$> _schemaTargetNamespace
+        , (,) [qn|version|] . review _Token <$> _schemaVersion
+        , (,) [qn|xml:lang|] . review _Language <$> _schemaXMLLang
+        ]
+      , teContents =
+        [ Fold $ schemaPrelude . folded . re _SchemaPrelude
+        , Fold $ schemaBody . folded . re _SchemaElement
+        ]
+      }
+
+    es :: XML.Element -> Maybe Schema
+    es XML.Element{..} =
+      case elementName of
+        "schema" ->
+          let
+            _schemaID =
+              elementAttributes ^? at "id" . _Just . _NCName
+            _schemaAttributeFormDefault =
+              elementAttributes ^? at "attributeFormDefault" . _Just . _Form
+            _schemaBlockDefault =
+              elementAttributes ^? at "blockDefault" . _Just . _Block
+            _schemaElementFormDefault =
+              elementAttributes ^? at "elementFormDefault" . _Just . _Form
+            _schemaFinalDefault =
+              elementAttributes ^? at "finalDefault" . _Just . _Final
+            _schemaTargetNamespace =
+              elementAttributes ^? at "targetNamespace" . _Just . _URI
+            _schemaVersion =
+              elementAttributes ^? at "version" . _Just . _Token
+            _schemaXMLLang =
+              elementAttributes ^? at "xml:lang" . _Just . _Language
+            _schemaAttrs =
+              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+            _schemaPrelude =
+              elementNodes ^..
+              folded .
+              XML._Element .
+              _SchemaPrelude
+            _schemaBody =
+              elementNodes ^..
+              folded .
+              XML._Element .
+              _SchemaElement
+              
+          in
+          Just Schema{..}
+        _ -> Nothing 

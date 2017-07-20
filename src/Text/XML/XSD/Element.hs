@@ -2,6 +2,7 @@
 module Text.XML.XSD.Element
   ( Element(..)
   , HasElement(..)
+  , AsElement(..)
   , mkElement
   , mkElementS
   , mkElementC
@@ -11,6 +12,7 @@ module Text.XML.XSD.Element
 import Prelude(Either(..), Maybe(..))
 
 import Text.XML.NCName
+import Text.XML.XSD.Lens
 import Text.XML.XSD.Types
 
 mkElement' :: NCName -> Either SimpleType ComplexType -> Element

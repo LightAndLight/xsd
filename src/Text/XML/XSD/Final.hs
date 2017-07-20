@@ -13,7 +13,7 @@ import Data.Text (Text)
 
 import qualified Data.Text as T
 
-import Text.XML.XSD.Types
+import Text.XML.XSD.Internal.Types
 
 class AsFinal s a where
   _Final :: Prism' s a

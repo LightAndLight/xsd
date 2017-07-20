@@ -18,8 +18,8 @@ import Data.Text (Text)
 
 import qualified Data.Text as T
 
-import Text.XML.URI
-import Text.XML.XSD.Types
+import Text.XML.XSD.Types.URI
+import Text.XML.XSD.Internal.Types
 
 _Locality :: Prism' Text Locality
 _Locality =

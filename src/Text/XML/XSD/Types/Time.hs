@@ -3,7 +3,7 @@
 {-# language RecordWildCards #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.Time
+module Text.XML.XSD.Types.Time
   ( Time
   , isTime
   , mkTime

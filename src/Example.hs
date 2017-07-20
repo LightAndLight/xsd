@@ -10,8 +10,8 @@ import Prelude
 import Control.Lens
 
 import Text.XML.Attrs
-import Text.XML.NCName
-import Text.XML.QName
+import Text.XML.XSD.Types.NCName
+import Text.XML.XSD.Types.QName
 import Text.XML.XSD.ComplexType
 import Text.XML.XSD.Element
 import Text.XML.XSD.Schema

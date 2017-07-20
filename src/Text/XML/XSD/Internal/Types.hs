@@ -8,7 +8,7 @@
 {-# language OverloadedStrings #-}
 {-# language RecordWildCards #-}
 {-# language QuasiQuotes #-}
-module Text.XML.XSD.Types where
+module Text.XML.XSD.Internal.Types where
 
 import Prelude
 
@@ -19,23 +19,23 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XML.Attrs
-import Text.XML.Base64Binary
-import Text.XML.Boolean
-import Text.XML.Date
-import Text.XML.DateTime
-import Text.XML.Decimal
-import Text.XML.Double
-import Text.XML.Float
-import Text.XML.HexBinary
-import Text.XML.ID
-import Text.XML.NCName
-import Text.XML.NonNegative
-import Text.XML.QName
-import Text.XML.Regex
-import Text.XML.Time
-import Text.XML.Token
-import Text.XML.URI
 import Text.XML.XSD.Form
+import Text.XML.XSD.Types.Base64Binary
+import Text.XML.XSD.Types.Boolean
+import Text.XML.XSD.Types.Date
+import Text.XML.XSD.Types.DateTime
+import Text.XML.XSD.Types.Decimal
+import Text.XML.XSD.Types.Double
+import Text.XML.XSD.Types.Float
+import Text.XML.XSD.Types.HexBinary
+import Text.XML.XSD.Types.ID
+import Text.XML.XSD.Types.NCName
+import Text.XML.XSD.Types.NonNegative
+import Text.XML.XSD.Types.QName
+import Text.XML.XSD.Types.Regex
+import Text.XML.XSD.Types.Time
+import Text.XML.XSD.Types.Token
+import Text.XML.XSD.Types.URI
 
 -- | XSD primitive datatypes
 data PrimitiveType

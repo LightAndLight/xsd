@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.HexBinary
+module Text.XML.XSD.Types.HexBinary
   ( HexBinary
   , isHexBinary
   , mkHexBinary

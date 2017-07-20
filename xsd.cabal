@@ -51,42 +51,43 @@ library
   hs-source-dirs:
                       src
 
-  other-modules:      Text.XML.Numbers.Sign
+  other-modules:
+                      Text.XML.XSD.Internal.Lenses
+                      Text.XML.XSD.Internal.Types
+                      Text.XML.XSD.Types.Numbers.Sign
   exposed-modules:    Example
                       Text.XML.Attrs
-                      Text.XML.Base64Binary
-                      Text.XML.Boolean
-                      Text.XML.Date
-                      Text.XML.Decimal
-                      Text.XML.Double
-                      Text.XML.Float
-                      Text.XML.HexBinary
-                      Text.XML.ID
-                      Text.XML.Language
-                      Text.XML.NCName
-                      Text.XML.NonNegative
-                      Text.XML.QName
-                      Text.XML.Regex
-                      Text.XML.Time
-                      Text.XML.Token
                       Text.XML.XSD
                       Text.XML.XSD.Attribute
                       Text.XML.XSD.AttributeGroup
-                      Text.XML.XSD.DateTime
                       Text.XML.XSD.Block
                       Text.XML.XSD.ComplexType
                       Text.XML.XSD.Element
                       Text.XML.XSD.Final
                       Text.XML.XSD.Form
                       Text.XML.XSD.Group
-                      Text.XML.XSD.Lens
                       Text.XML.XSD.Namespace
                       Text.XML.XSD.Notation
                       Text.XML.XSD.ProcessContents
                       Text.XML.XSD.Schema
                       Text.XML.XSD.Sequence
                       Text.XML.XSD.SimpleType
-                      Text.XML.XSD.Types
+                      Text.XML.XSD.Types.Base64Binary
+                      Text.XML.XSD.Types.Boolean
+                      Text.XML.XSD.Types.Date
+                      Text.XML.XSD.Types.DateTime
+                      Text.XML.XSD.Types.Decimal
+                      Text.XML.XSD.Types.Double
+                      Text.XML.XSD.Types.Float
+                      Text.XML.XSD.Types.HexBinary
+                      Text.XML.XSD.Types.ID
+                      Text.XML.XSD.Types.Language
+                      Text.XML.XSD.Types.NCName
+                      Text.XML.XSD.Types.NonNegative
+                      Text.XML.XSD.Types.QName
+                      Text.XML.XSD.Types.Regex
+                      Text.XML.XSD.Types.Time
+                      Text.XML.XSD.Types.Token
 
 test-suite doctests
   type:

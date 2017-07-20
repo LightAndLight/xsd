@@ -5,7 +5,7 @@
 {-# language RecordWildCards #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.QName
+module Text.XML.XSD.Types.QName
   ( QName
   , isQName
   , mkQName
@@ -32,7 +32,7 @@ import Language.Haskell.TH.Syntax
 import Text.Parser.Char
 import Text.Parser.Combinators
 
-import Text.XML.NCName
+import Text.XML.XSD.Types.NCName
 
 import qualified Data.Text as T
 import qualified Text.XML as XML

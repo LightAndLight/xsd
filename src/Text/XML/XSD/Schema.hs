@@ -39,16 +39,16 @@ import qualified Text.XML as XML
 import qualified Text.XML.Lens as XML
 
 import Text.XML.Attrs
-import Text.XML.Language
-import Text.XML.NCName
-import Text.XML.QName
-import Text.XML.Token
-import Text.XML.URI
+import Text.XML.XSD.Types.Language
+import Text.XML.XSD.Types.NCName
+import Text.XML.XSD.Types.QName
+import Text.XML.XSD.Types.Token
+import Text.XML.XSD.Types.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
-import Text.XML.XSD.Types
-import Text.XML.XSD.Lens
+import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.Internal.Lenses
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
 data SchemaBlock = SBExtension | SBRestriction | SBSubstitution

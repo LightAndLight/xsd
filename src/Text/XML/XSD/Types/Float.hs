@@ -2,7 +2,7 @@
 {-# language OverloadedStrings #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.Float
+module Text.XML.XSD.Types.Float
   ( Float
   , isFloat
   , mkFloat
@@ -26,8 +26,8 @@ import Text.Parser.Combinators
 
 import qualified Data.Text as T
 
-import Text.XML.Decimal
-import Text.XML.Numbers.Sign
+import Text.XML.XSD.Types.Decimal
+import Text.XML.XSD.Types.Numbers.Sign
 
 isFloat :: Text -> Bool
 isFloat = isJust . mkFloat

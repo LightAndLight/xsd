@@ -2,7 +2,7 @@
 {-# language OverloadedStrings #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.Decimal
+module Text.XML.XSD.Types.Decimal
   ( Decimal
   , isDecimal
   , mkDecimal
@@ -27,7 +27,7 @@ import Text.Parser.Combinators
 
 import qualified Data.Text as T
 
-import Text.XML.Numbers.Sign
+import Text.XML.XSD.Types.Numbers.Sign
 
 data Decimal
   = Decimal

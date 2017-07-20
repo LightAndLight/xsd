@@ -15,7 +15,7 @@ import Prelude (Maybe(..))
 import Control.Lens
 import Data.Text (Text)
 
-import Text.XML.XSD.Types
+import Text.XML.XSD.Internal.Types
 
 _ProcessContents :: Prism' Text ProcessContents
 _ProcessContents =

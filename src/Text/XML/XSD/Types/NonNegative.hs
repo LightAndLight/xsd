@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.NonNegative
+module Text.XML.XSD.Types.NonNegative
   ( NonNegative
   , isNonNegative
   , mkNonNegative

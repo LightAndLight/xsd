@@ -18,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Map as M
 import qualified Text.XML as XML
 
-import Text.XML.QName
+import Text.XML.XSD.Types.QName
 
 newtype Attrs = Attrs { _getAttrs :: Map QName Text }
   deriving (Eq, Show)

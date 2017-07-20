@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.NCName
+module Text.XML.XSD.Types.NCName
   ( NCName
   , _getNCName
   , isNCName

@@ -1,7 +1,7 @@
 {-# language DeriveLift #-}
 {-# language OverloadedStrings #-}
 
-module Text.XML.Numbers.Sign where
+module Text.XML.XSD.Types.Numbers.Sign where
 
 import Control.Applicative ((<|>), pure)
 import Data.Functor (($>))

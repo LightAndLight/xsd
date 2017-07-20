@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.Token
+module Text.XML.XSD.Types.Token
   ( Token
   , isToken
   , mkToken

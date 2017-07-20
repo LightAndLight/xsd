@@ -1,7 +1,7 @@
 {-# language OverloadedStrings #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.Language
+module Text.XML.XSD.Types.Language
   ( Language
   , isLanguage
   , mkLanguage

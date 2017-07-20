@@ -1,4 +1,4 @@
-module Text.XML.Regex
+module Text.XML.XSD.Types.Regex
   ( Regex
   , isRegex
   , mkRegex

@@ -11,7 +11,7 @@ import Prelude
 import Control.Lens
 import Data.Text (Text)
 
-import Text.XML.XSD.Types
+import Text.XML.XSD.Internal.Types
 
 class AsBlock s a where
   _Block :: Prism' s a

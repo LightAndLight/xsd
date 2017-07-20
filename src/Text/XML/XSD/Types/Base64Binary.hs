@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.Base64Binary
+module Text.XML.XSD.Types.Base64Binary
   ( Base64Binary
   , isBase64Binary
   , mkBase64Binary

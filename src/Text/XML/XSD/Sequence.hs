@@ -11,8 +11,8 @@ module Text.XML.XSD.Sequence
 import Prelude (Maybe(..))
 
 import Text.XML.Attrs
-import Text.XML.XSD.Lens
-import Text.XML.XSD.Types
+import Text.XML.XSD.Internal.Lenses
+import Text.XML.XSD.Internal.Types
 
 mkSequence :: [SequenceContent] -> Sequence
 mkSequence content

@@ -4,7 +4,7 @@ language
 ExistentialQuantification, LambdaCase, OverloadedStrings, QuasiQuotes, RankNTypes, RecordWildCards, MultiParamTypeClasses
 #-}
 
-module Text.XML.XSD.Lens where
+module Text.XML.XSD.Internal.Lenses where
 
 import Prelude
 
@@ -22,19 +22,19 @@ import qualified Text.XML as XML
 import qualified Text.XML.Lens as XML
 
 import Text.XML.Attrs
-import Text.XML.Boolean
-import Text.XML.NCName
-import Text.XML.NonNegative
-import Text.XML.QName
-import Text.XML.Regex
-import Text.XML.Token
-import Text.XML.URI
+import Text.XML.XSD.Types.Boolean
+import Text.XML.XSD.Types.NCName
+import Text.XML.XSD.Types.NonNegative
+import Text.XML.XSD.Types.QName
+import Text.XML.XSD.Types.Regex
+import Text.XML.XSD.Types.Token
+import Text.XML.XSD.Types.URI
 import Text.XML.XSD.Block
 import Text.XML.XSD.Final
 import Text.XML.XSD.Form
 import Text.XML.XSD.Namespace
 import Text.XML.XSD.ProcessContents
-import Text.XML.XSD.Types
+import Text.XML.XSD.Internal.Types
 
 data ToElement a
   = ToElement

@@ -11,9 +11,9 @@ module Text.XML.XSD.Element
 
 import Prelude(Either(..), Maybe(..))
 
-import Text.XML.NCName
-import Text.XML.XSD.Lens
-import Text.XML.XSD.Types
+import Text.XML.XSD.Types.NCName
+import Text.XML.XSD.Internal.Lenses
+import Text.XML.XSD.Internal.Types
 
 mkElement' :: NCName -> Either SimpleType ComplexType -> Element
 mkElement' name typeElem = (mkElement name) { _elTypeElement = Just typeElem }

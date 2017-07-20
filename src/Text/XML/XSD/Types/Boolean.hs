@@ -1,5 +1,5 @@
 {-# language OverloadedStrings #-}
-module Text.XML.Boolean
+module Text.XML.XSD.Types.Boolean
   ( isBoolean
   , mkBoolean
   , parseBoolean

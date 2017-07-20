@@ -1,6 +1,6 @@
 {-# language DeriveLift, RecordWildCards, OverloadedStrings, TemplateHaskell #-}
 
-module Text.XML.DateTime
+module Text.XML.XSD.Types.DateTime
   ( DateTime
   , isDateTime
   , mkDateTime
@@ -23,8 +23,8 @@ import Text.Parser.Char
 
 import qualified Data.Text as T
 
-import Text.XML.Date
-import Text.XML.Time
+import Text.XML.XSD.Types.Date
+import Text.XML.XSD.Types.Time
 
 data DateTime
   = DateTime

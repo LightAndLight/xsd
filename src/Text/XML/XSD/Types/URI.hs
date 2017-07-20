@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.URI
+module Text.XML.XSD.Types.URI
   ( URI.URI
   , isURI
   , mkURI

@@ -2,7 +2,7 @@
 {-# language RecordWildCards #-}
 {-# language TemplateHaskell #-}
 
-module Text.XML.Date
+module Text.XML.XSD.Types.Date
   ( Date
   , isDate
   , mkDate

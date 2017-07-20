@@ -107,7 +107,7 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
         f = elementAttributes ^? at "fixed" . _Just . _Boolean
         att = emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
       in 
-      case elementName of
+      case XML.nameLocalName elementName of
         "length" ->
           let v = elementAttributes ^? at "value" . _Just . _NonNegative
           in CFLength i <$> v <*> pure f <*> pure att
@@ -187,7 +187,7 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
       let
         i = elementAttributes ^? at "id" . _Just . _NCName
         att = emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
-      in case elementName of
+      in case XML.nameLocalName elementName of
         "restriction" ->
           let
             b = elementAttributes ^? at "base" . _Just . _QName
@@ -255,7 +255,7 @@ instance AsSimpleType XML.Element where
             (elementNodes ^.. folded . XML._Element . _SimpleTypeContent) ^? _head
         in do
           _stContent <- maybeStContent
-          case elementName of
+          case XML.nameLocalName elementName of
             "simpleType" -> Just SimpleType{..}
             _ -> Nothing
 
@@ -273,7 +273,7 @@ _SimpleAttributeGroup = prism' sagToElement elementToSag
 
     elementToSag :: XML.Element -> Maybe SimpleAttributeGroup
     elementToSag XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "attributeGroup" ->
           let
             _sagID = elementAttributes ^? at "id" . _Just . _NCName
@@ -304,7 +304,7 @@ _AnyAttribute = prism' aaToElement elementToAa
 
     elementToAa :: XML.Element -> Maybe AnyAttribute
     elementToAa XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "anyAttribute" ->
           let
             _aaID =
@@ -342,7 +342,7 @@ _SimpleRestriction = prism' srToElement elementToSr
 
     elementToSr :: XML.Element -> Maybe SimpleRestriction
     elementToSr XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "restriction" ->
           let
             _srsBase = elementAttributes ^? at "base" . _Just . _QName
@@ -386,7 +386,7 @@ _SimpleExtension = prism' seToElement elementToSe
 
     elementToSe :: XML.Element -> Maybe SimpleExtension
     elementToSe XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "extension" ->
           let
             _sexBase = elementAttributes ^? at "base" . _Just . _QName
@@ -443,7 +443,7 @@ _ComplexRestriction = prism' crToElement elementToCr
 
     elementToCr :: XML.Element -> Maybe ComplexRestriction
     elementToCr XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "restriction" ->
           let
             _crsID =
@@ -487,7 +487,7 @@ _ComplexExtension = prism' ce ec
 
     ec :: XML.Element -> Maybe ComplexExtension
     ec XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "extension" ->
           let
             _cexID =
@@ -618,7 +618,7 @@ instance AsComplexType XML.Element where
 
       elementToComplexType :: XML.Element -> Maybe ComplexType
       elementToComplexType XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "complexType" -> do
             let
               _ctID =
@@ -687,7 +687,7 @@ instance AsGroup XML.Element where
 
       eg :: XML.Element -> Maybe Group
       eg XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "group" ->
             let
               _grID = elementAttributes ^? at "id" . _Just . _NCName
@@ -746,7 +746,7 @@ instance AsAll XML.Element where
 
       ea :: XML.Element -> Maybe All
       ea XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "all" ->
             let
               _allID =
@@ -789,7 +789,7 @@ instance AsAny XML.Element where
 
       ea :: XML.Element -> Maybe Any
       ea XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "any" ->
             let
               _anyID =
@@ -849,7 +849,7 @@ instance AsChoice XML.Element where
 
       ec :: XML.Element -> Maybe Choice
       ec XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "choice" ->
             let
               _choiceID =
@@ -905,7 +905,7 @@ instance AsSequence XML.Element where
 
       es :: XML.Element -> Maybe Sequence
       es XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "sequence" ->
             let
               _sequenceID =
@@ -964,7 +964,7 @@ instance AsAttributeGroup XML.Element AttributeGroup where
 
       elementToAg :: XML.Element -> Maybe AttributeGroup
       elementToAg XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "attributeGroup" ->
             let
               _agID =
@@ -1031,7 +1031,7 @@ instance AsAttribute XML.Element where
 
       elementToAtt :: XML.Element -> Maybe Attribute
       elementToAtt XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "attribute" ->
             let
               _attID =
@@ -1079,7 +1079,7 @@ instance AsNotation XML.Element where
 
       en :: XML.Element -> Maybe Notation
       en XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "notation" ->
             let
               _notID =
@@ -1153,7 +1153,7 @@ instance AsElement XML.Element where
 
       b :: XML.Element -> Maybe Element
       b XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "element" ->
             let
               _elID =
@@ -1207,7 +1207,7 @@ instance AsInclude XML.Element where
 
       ei :: XML.Element -> Maybe Include
       ei XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "include" -> do
             let
               _incID =
@@ -1240,7 +1240,7 @@ instance AsImport XML.Element where
 
       ei :: XML.Element -> Maybe Import
       ei XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "import" ->
             let
               _impID =
@@ -1289,7 +1289,7 @@ instance AsRedefine XML.Element where
 
       etr :: XML.Element -> Maybe Redefine
       etr XML.Element{..} =
-        case elementName of
+        case XML.nameLocalName elementName of
           "redefine" -> do
             let
               _redID =

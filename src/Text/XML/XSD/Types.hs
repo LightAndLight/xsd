@@ -51,6 +51,7 @@ data PrimitiveType
   | PBase64Binary
   | PAnyURI
   | PQName
+  deriving (Eq, Show)
   {-
   | PNOTATION
   | PGYearMonth
@@ -66,6 +67,7 @@ data AnySimpleType
   { _astValue :: Text
   , _astType :: PrimitiveType
   }
+  deriving (Eq, Show)
 
 _AnySimpleType :: Prism' (Text, PrimitiveType) AnySimpleType
 _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
@@ -95,7 +97,8 @@ _AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
      in if test txt then Just (AnySimpleType txt ty) else Nothing
 
 -- | Permitted 'whiteSpace' 'value's
-data WhiteSpaceSetting = Collapse | Replace | Preserve deriving Show
+data WhiteSpaceSetting = Collapse | Replace | Preserve
+  deriving (Eq, Show)
 
 _WhiteSpace :: Prism' Text WhiteSpaceSetting
 _WhiteSpace =
@@ -153,6 +156,7 @@ data ConstraintFacet
     , _cfWhiteSpaceFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
+  deriving (Eq, Show)
     
   -- | 'maxInclusive' element https://www.w3.org/TR/xmlschema-2/#element-maxInclusive
   -- | 'minInclusive' element https://www.w3.org/TR/xmlschema-2/#element-minInclusive
@@ -174,6 +178,7 @@ data Include
   , _incSchemaLocation :: URI
   , _incAttrs :: Attrs
   }
+  deriving (Eq, Show)
   
 -- | 'import' element https://www.w3.org/TR/xmlschema-1/#element-import
 data Import
@@ -183,12 +188,15 @@ data Import
   , _impSchemaLocation :: Maybe URI
   , _impAttrs :: Attrs
   }
+  deriving (Eq, Show)
   
 -- | Permitted values when 'simpleType's 'final' attribute is a list
 data STFFinal = STFList | STFUnion | STFRestriction
+  deriving (Eq, Show)
 
 -- | Permitted values of 'simpleType's 'final' attribute
 data STFinal = STAll | STMultiple [STFFinal]
+  deriving (Eq, Show)
 
 -- | Enumeration for possible contents of 'simpleType' element 
 -- | https://www.w3.org/TR/xmlschema-1/#element-simpleType
@@ -220,6 +228,7 @@ data STContent
   , _stunMemberTypes :: Maybe [QName]
   , _stunTypeElements :: Maybe [SimpleType]
   }
+  deriving (Eq, Show)
 
 stcID :: Lens' STContent (Maybe NCName)
 stcID = lens _stcID (\s a -> s { _stcID = a})
@@ -243,9 +252,13 @@ data SimpleType
   , _stFinal :: Maybe STFinal
   , _stContent :: STContent
   }
+  deriving (Eq, Show)
 
 data CTBlock = CTBExtension | CTBRestriction
+  deriving (Eq, Show)
+
 data CTFinal = CTFExtension | CTFRestriction
+  deriving (Eq, Show)
 
 -- | Enumeration for possible contents of 'complexType' element https://www.w3.org/TR/xmlschema-1/#element-complexType
 data CTContent
@@ -271,6 +284,7 @@ data CTContent
   , _ctgcAttributeSpec :: [Either Attribute AttributeGroup]
   , _ctgcAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 emptyCTGroupContent :: CTContent
 emptyCTGroupContent =
@@ -292,6 +306,7 @@ data ComplexType
   , _ctName :: Maybe NCName
   , _ctContent :: CTContent
   }
+  deriving (Eq, Show)
 
 -- | Permitted content for 'redefine' elements
 data RedefineContent
@@ -299,6 +314,7 @@ data RedefineContent
   | RCComplexType ComplexType
   | RCGroup Group
   | RCAttributeGroup AttributeGroup
+  deriving (Eq, Show)
   
 -- | 'redefine' element https://www.w3.org/TR/xmlschema-1/#element-redefine
 data Redefine
@@ -308,6 +324,7 @@ data Redefine
   , _redAttrs :: Attrs
   , _redContent :: [RedefineContent]
   }
+  deriving (Eq, Show)
   
 -- | 'notation' element https://www.w3.org/TR/xmlschema-1/#element-notation
 data Notation
@@ -318,9 +335,11 @@ data Notation
   , _notSystem :: Maybe URI
   , _notAttrs :: Attrs
   }
+  deriving (Eq, Show)
   
 -- | Permitted values for an 'attribute's 'use' attribute
 data Use = Optional | Prohibited | Required
+  deriving (Eq, Show)
 
 -- | 'attribute' element https://www.w3.org/TR/xmlschema-1/#element-attribute 
 data Attribute
@@ -336,6 +355,7 @@ data Attribute
   , _attAttrs :: Attrs
   , _attSimpleType :: Maybe SimpleType
   }
+  deriving (Eq, Show)
 
 -- | 'attributeGroup' element https://www.w3.org/TR/xmlschema-1/#element-attributeGroup
 data AttributeGroup
@@ -347,9 +367,11 @@ data AttributeGroup
   , _agAttributeSpec :: [Either Attribute AttributeGroup]
   , _agAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 -- | Upper bound on occurrances of things
 data Occurances = Unbounded | Bounded NonNegative
+  deriving (Eq, Show)
 
 -- | 'element' element https://www.w3.org/TR/xmlschema-1/#element-element
 data Element
@@ -370,6 +392,7 @@ data Element
   -- , elBlock :: ??
   -- , elDefault :: String
   }
+  deriving (Eq, Show)
 
 mkElement :: NCName -> Element
 mkElement name
@@ -388,12 +411,15 @@ mkElement name
 
 -- | Permitted values of when 'namespace' attribute is a list
 data Locality = TargetNamespace | Local
+  deriving (Eq, Show)
 
 -- | Permitted values of the 'namespace' attribute
 data Namespace = NSAny | NSOther | NSList [Either URI Locality]
+  deriving (Eq, Show)
 
 -- | Permitted values of the 'processContents' attribute
 data ProcessContents = PCLax | PCSkip | PCStrict
+  deriving (Eq, Show)
 
 -- | 'anyAttribute' element https://www.w3.org/TR/xmlschema-1/#element-anyAttribute
 data AnyAttribute
@@ -403,6 +429,7 @@ data AnyAttribute
   , _aaProcessContents :: Maybe ProcessContents
   , _aaAttrs :: Attrs
   }
+  deriving (Eq, Show)
 
 -- | 'attributeGroup' element within a 'restriction' element within a 'simpleContent'
 -- | element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..attributeGroup
@@ -412,6 +439,7 @@ data SimpleAttributeGroup
   , _sagRef :: Maybe QName
   , _sagAttrs :: Attrs
   }
+  deriving (Eq, Show)
 
 -- | 'restriction' element within a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..restriction
 data SimpleRestriction
@@ -424,6 +452,7 @@ data SimpleRestriction
   , _srsAttributeSpec :: [Either Attribute SimpleAttributeGroup]
   , _srsAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 -- | 'extension' element within a 'simpleContent' element https://www.w3.org/TR/xmlschema-1/#element-simpleContent..extension
 data SimpleExtension
@@ -434,12 +463,15 @@ data SimpleExtension
   , _sexAttributeSpec :: [Either Attribute SimpleAttributeGroup]
   , _sexAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 -- | 1
 data One = One
+  deriving (Eq, Show)
 
 -- | 0
 data Zero = Zero
+  deriving (Eq, Show)
 
 -- | 'all' element https://www.w3.org/TR/xmlschema-1/#element-all
 data All
@@ -450,6 +482,7 @@ data All
   , _allAttrs :: Attrs
   , _allContent :: [Element]
   }
+  deriving (Eq, Show)
 
 -- | 'any' element https://www.w3.org/TR/xmlschema-1/#element-any
 data Any
@@ -461,6 +494,7 @@ data Any
   , _anyProcessContents :: Maybe ProcessContents
   , _anyAttrs :: Attrs
   }
+  deriving (Eq, Show)
 
 -- | Permitted content of a 'choice' element
 data ChoiceContent
@@ -468,6 +502,7 @@ data ChoiceContent
   | CCGroup Group
   | CCSequence Sequence
   | CCAny Any
+  deriving (Eq, Show)
   
 -- | 'choice' element https://www.w3.org/TR/xmlschema-1/#element-choice
 data Choice
@@ -478,6 +513,7 @@ data Choice
   , _choiceAttrs :: Attrs
   , _choiceContent :: [ChoiceContent]
   }
+  deriving (Eq, Show)
 
 -- | Permitted content of a 'sequence' element
 data SequenceContent
@@ -485,6 +521,7 @@ data SequenceContent
   | SCGroup Group
   | SCSequence Sequence
   | SCAny Any
+  deriving (Eq, Show)
 
 -- | 'sequence' element https://www.w3.org/TR/xmlschema-1/#element-sequence
 data Sequence
@@ -495,12 +532,14 @@ data Sequence
   , _sequenceAttrs :: Attrs
   , _sequenceContent :: [SequenceContent]
   }
+  deriving (Eq, Show)
 
 -- | Permitted content of a 'group' element
 data GroupContent
   = GCAll All
   | GCChoice Choice
   | GCSequence Sequence
+  deriving (Eq, Show)
 
 -- | 'group' element https://www.w3.org/TR/xmlschema-1/#element-group
 data Group
@@ -513,6 +552,7 @@ data Group
   , _grAttrs :: Attrs
   , _grContent :: Maybe GroupContent
   }
+  deriving (Eq, Show)
 
 -- | Permitted group definition elements in 'complexType' 
 data CTGroupDefinition
@@ -520,6 +560,7 @@ data CTGroupDefinition
   | CTGDAll All
   | CTGDChoice Choice
   | CTGDSequence Sequence
+  deriving (Eq, Show)
 
 -- | 'extension' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..extension
 data ComplexExtension
@@ -531,6 +572,7 @@ data ComplexExtension
   , _cexAttributeSpec :: [Either Attribute AttributeGroup]
   , _cexAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 -- | 'restriction' element within a 'complexContent' element https://www.w3.org/TR/xmlschema-1/#element-complexContent..restriction
 data ComplexRestriction
@@ -542,6 +584,7 @@ data ComplexRestriction
   , _crsAttributeSpec :: [Either Attribute AttributeGroup]
   , _crsAnyAttribute :: Maybe AnyAttribute
   }
+  deriving (Eq, Show)
 
 makeClassy ''Element
 makeLenses ''SimpleType

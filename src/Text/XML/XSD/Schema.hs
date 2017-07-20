@@ -52,9 +52,11 @@ import Text.XML.XSD.Lens
 
 -- | Permitted 'schemaBlockDefault' values when specifiying multiples
 data SchemaBlock = SBExtension | SBRestriction | SBSubstitution
+  deriving (Eq, Show)
 
 -- | Permitted 'schemaBlockDefault' values
 data SchemaBlockDefault = SBAll | SBMultiple [SchemaBlock]
+  deriving (Eq, Show)
 
 instance AsBlock Text SchemaBlockDefault where
   _Block = prism' showSchemaBlockDefault parseSchemaBlockDefault
@@ -89,6 +91,7 @@ instance AsBlock Text SchemaBlockDefault where
 
 -- | Permitted 'schemaFinalDefault' values when specifiying multiples
 data SchemaFinal = SFExtension | SFRestriction | SFList | SFUnion
+  deriving (Eq, Show)
 
 showSchemaFinal :: SchemaFinal -> Text
 showSchemaFinal sf =
@@ -109,6 +112,7 @@ parseSchemaFinal input =
 
 -- | Permitted 'schemaFinalDefault' values
 data SchemaFinalDefault = SFAll | SFMultiple [SchemaFinal]
+  deriving (Eq, Show)
 
 showSchemaFinalDefault :: SchemaFinalDefault -> Text
 showSchemaFinalDefault a =
@@ -131,6 +135,7 @@ data SchemaPrelude
   = SPInclude Include
   | SPImport Import
   | SPRedefine Redefine
+  deriving (Eq, Show)
 
 _SchemaPrelude :: Prism' XML.Element SchemaPrelude
 _SchemaPrelude =
@@ -154,6 +159,7 @@ data SchemaElement
   | SEElement Element
   | SEAttribute Attribute
   | SENotation Notation
+  deriving (Eq, Show)
 
 schemaElementToElement :: SchemaElement -> XML.Element
 schemaElementToElement e =
@@ -168,7 +174,7 @@ schemaElementToElement e =
 
 elementToSchemaElement :: XML.Element -> Maybe SchemaElement
 elementToSchemaElement e =
-  case XML.elementName e of
+  case XML.nameLocalName (XML.elementName e) of
     "simpleType" -> fmap SESimpleType (e ^? _SimpleType)
     "complexType" -> fmap SEComplexType (e ^? _ComplexType)
     "group" -> fmap SEGroup (e ^? _Group)
@@ -209,7 +215,7 @@ data Schema
   , _schemaAttrs :: Attrs
   , _schemaPrelude :: [SchemaPrelude]
   , _schemaBody :: [SchemaElement]
-  }
+  } deriving (Eq, Show)
 
 -- | An empty 'schema' element
 schema :: [SchemaElement] -> Schema
@@ -258,7 +264,7 @@ _Schema = prism' se es
 
     es :: XML.Element -> Maybe Schema
     es XML.Element{..} =
-      case elementName of
+      case XML.nameLocalName elementName of
         "schema" ->
           let
             _schemaID =

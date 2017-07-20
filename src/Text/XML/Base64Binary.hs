@@ -11,18 +11,12 @@ module Text.XML.Base64Binary
 
 import Prelude
 
-import Control.Applicative
 import Control.Lens (Prism', prism')
-import Data.Attoparsec.Text (parseOnly)
 import Data.ByteString (ByteString)
-import Data.Functor
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Word
 import Language.Haskell.TH.Quote
-import Text.Parser.Char
-import Text.Parser.Combinators
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64

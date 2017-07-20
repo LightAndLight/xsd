@@ -21,7 +21,13 @@ import Text.RE.TDFA.String
 
 import qualified Data.Text as T
 
-type Regex = RE
+newtype Regex = Regex { getRegex :: RE }
+
+instance Eq Regex where
+  Regex a == Regex b = reSource a == reSource b
+
+instance Show Regex where
+  show (Regex r) = "Regex " ++ reSource r
 
 isRegex :: Text -> Bool
 isRegex = isJust . mkRegex
@@ -33,11 +39,11 @@ mkRegex a =
     _ -> Nothing
 
 parseRegex :: (Monad m, CharParsing m) => m Regex
-parseRegex = (some anyChar <* eof) >>= compileRegex
+parseRegex = Regex <$> ((some anyChar <* eof) >>= compileRegex)
 
 -- | Re-exported from Text.Regex to prevent clashes with 're' from 'Control.Lens'
 rx :: QuasiQuoter
 rx = re
 
 _Regex :: Prism' Text Regex
-_Regex = prism' (T.pack . reSource) mkRegex
+_Regex = prism' (T.pack . reSource . getRegex) mkRegex

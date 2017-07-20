@@ -10,8 +10,6 @@ module Text.XML.XSD.Sequence
 
 import Prelude (Maybe(..))
 
-import Control.Lens
-
 import Text.XML.Attrs
 import Text.XML.XSD.Lens
 import Text.XML.XSD.Types

@@ -9,7 +9,7 @@ module Text.XML.Attrs
   )
   where
 
-import Prelude ((.))
+import Prelude ((.), Eq, Show)
 
 import Control.Lens (Lens', makeLenses, (?~), (&), at)
 import Data.Map (Map)
@@ -20,7 +20,8 @@ import qualified Text.XML as XML
 
 import Text.XML.QName
 
-newtype Attrs = Attrs { _getAttrs :: Map QName Text}
+newtype Attrs = Attrs { _getAttrs :: Map QName Text }
+  deriving (Eq, Show)
 
 makeLenses ''Attrs
 

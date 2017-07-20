@@ -90,6 +90,6 @@ qn =
 _QName :: Prism' Text QName
 _QName = prism'
   (\s -> fromMaybe ""
-    (s ^? qnPrefix . _Just . re _NCName) <>
+    (s ^? qnPrefix . _Just . re _NCName . to (<> ":")) <>
     (s ^. qnLocalPart . re _NCName))
   mkQName

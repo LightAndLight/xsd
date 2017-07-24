@@ -19,9 +19,10 @@ import Text.XML.Attrs
 import Text.XML.XSD.Internal.Lenses
 import Text.XML.XSD.Internal.Types
 
-mkComplexType :: CTContent -> ComplexType
+mkComplexType :: CTContent -> Namespaced ComplexType
 mkComplexType content
-  = ComplexType
+  = (,) Nothing
+  ComplexType
   { _ctID = Nothing
   , _ctAbstract = Nothing
   , _ctBlock = Nothing

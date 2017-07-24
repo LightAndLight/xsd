@@ -1,7 +1,8 @@
 {-#
 language
 
-ExistentialQuantification, LambdaCase, OverloadedStrings, QuasiQuotes, RankNTypes, RecordWildCards, MultiParamTypeClasses
+ExistentialQuantification, LambdaCase, OverloadedStrings, QuasiQuotes, RankNTypes, RecordWildCards, MultiParamTypeClasses,
+TypeSynonymInstances, FlexibleInstances
 #-}
 
 module Text.XML.XSD.Internal.Lenses where
@@ -11,7 +12,9 @@ import Prelude
 import Control.Applicative
 import Control.Monad
 import Control.Lens hiding (Choice)
+import Data.Bifunctor
 import Data.Functor
+import Data.Map (Map)
 import Data.Maybe
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -36,32 +39,49 @@ import Text.XML.XSD.Namespace
 import Text.XML.XSD.ProcessContents
 import Text.XML.XSD.Internal.Types
 
+createAttrs :: [XML.Name] -> Map XML.Name Text -> Attrs
+createAttrs reservedKeys elemAttrs =
+  emptyAttrs & attrs .~ M.mapKeys nameToQName (foldr M.delete elemAttrs reservedKeys)
+
+data TEContent a =
+  forall b.
+  TEContent
+  { tecGetter :: ReifiedFold a b
+  , tecTransform :: ReifiedFold (Namespaced b) XML.Element
+  }
+
 data ToElement a
   = ToElement
   { teName :: a -> XML.Name
   , teAttrs :: a -> [Maybe (QName, Text)]
-  , teContents :: [ReifiedFold a XML.Element]
+  , teContents :: [TEContent a]
   }
   
 toElement
   :: HasAttrs a
   => ToElement a
-  -> a
+  -> Namespaced a
   -> XML.Element
-toElement te a =
+toElement ToElement{..} (ns, a) =
   XML.Element
-  { elementName = teName te a
+  { elementName = teName a & XML._nameNamespace .~ fmap (review _NCName) ns
   , elementAttributes =
       M.mapKeys qNameToName $
-      (a ^. attrs) `M.union` M.fromList (teAttrs te a ^.. folded . _Just)
+      (a ^. attrs) `M.union` M.fromList (teAttrs a ^.. folded . _Just)
   , elementNodes =
-      a ^.. foldMap ((. re XML._Element) . runFold) (teContents te)
+      a ^..
+      foldMap
+        (\TEContent{..} ->
+           runFold tecGetter .
+           to ((,) ns) .
+           runFold tecTransform . re XML._Element)
+      teContents
   }
 
-_ConstraintFacet :: Prism' XML.Element ConstraintFacet
+_ConstraintFacet :: Prism' XML.Element (Namespaced ConstraintFacet)
 _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
   where
-    constraintFacetToElement :: ConstraintFacet -> XML.Element
+    constraintFacetToElement :: (Maybe NCName, ConstraintFacet) -> XML.Element
     constraintFacetToElement =
       toElement 
         ToElement
@@ -100,14 +120,15 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
         , teContents = []
         }
 
-    elementToConstraintFacet :: XML.Element -> Maybe ConstraintFacet
-    elementToConstraintFacet XML.Element{..} =
+    elementToConstraintFacet :: XML.Element -> Maybe (Maybe NCName, ConstraintFacet)
+    elementToConstraintFacet XML.Element{..} = do
       let
+        reservedKeys = ["id", "fixed", "value"]
         i = elementAttributes ^? at "id" . _Just . _NCName
         f = elementAttributes ^? at "fixed" . _Just . _Boolean
-        att = emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
-      in 
-      case XML.nameLocalName elementName of
+        att = createAttrs reservedKeys elementAttributes
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "length" ->
           let v = elementAttributes ^? at "value" . _Just . _NonNegative
           in CFLength i <$> v <*> pure f <*> pure att
@@ -133,20 +154,22 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
           in CFWhiteSpace i <$> v <*> pure f <*> pure att
 
         _ -> Nothing
+
+      withNamespace ns el
   
-_SimpleTypeContent :: Prism' XML.Element STContent
+_SimpleTypeContent :: Prism' XML.Element (Namespaced STContent)
 _SimpleTypeContent = prism' stContentToElement elementToStContent
   where
-    stContentToElement :: STContent -> XML.Element
+    stContentToElement :: Namespaced STContent -> XML.Element
     stContentToElement stc =
-      let te = case stc of
+      let te = case snd stc of
             STRestriction{} ->
               ToElement
               { teName = elementName
               , teAttrs = elementAttrs
               , teContents = 
-                  [ Fold $ to _strsTypeElement . _Just . re _SimpleType
-                  , Fold $ to _strsConstraints . folded . re _ConstraintFacet
+                  [ TEContent (Fold $ to _strsTypeElement . _Just) (Fold $ re _SimpleType)
+                  , TEContent (Fold $ to _strsConstraints . folded) (Fold $ re _ConstraintFacet)
                   ]
               }
             STList{} ->
@@ -154,14 +177,14 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
               { teName = elementName
               , teAttrs = elementAttrs
               , teContents =
-                  [Fold $ to _stlsTypeElement . _Just . re _SimpleType]
+                  [ TEContent (Fold $ to _stlsTypeElement . _Just) (Fold $ re _SimpleType) ]
               }
             STUnion{} ->
               ToElement
               { teName = elementName
               , teAttrs = elementAttrs
               , teContents =
-                [Fold $ to _stunTypeElements . _Just . folded . re _SimpleType]
+                [ TEContent (Fold $ to _stunTypeElements . _Just . folded) (Fold $ re _SimpleType) ]
               }
       in toElement te stc
       where
@@ -182,37 +205,41 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
             STUnion{..} -> 
               [(,) [qn|memberTypes|] . T.unwords . fmap (review _QName) <$> _stunMemberTypes]
 
-    elementToStContent :: XML.Element -> Maybe STContent
-    elementToStContent XML.Element{..} =
+    elementToStContent :: XML.Element -> Maybe (Namespaced STContent)
+    elementToStContent XML.Element{..} = do
       let
+        reservedKeys = ["id"]
         i = elementAttributes ^? at "id" . _Just . _NCName
-        att = emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
-      in case XML.nameLocalName elementName of
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "restriction" ->
           let
+            att = createAttrs ("base" : reservedKeys) elementAttributes
             b = elementAttributes ^? at "base" . _Just . _QName
             st =
               elementNodes ^..
               folded .
               XML._Element .
-              _SimpleType
+              _SimpleType . _2
             cfs = 
               elementNodes ^..
               folded .
               XML._Element .
-              _ConstraintFacet
+              _ConstraintFacet . _2
           in
           Just $ STRestriction i att b (st ^? _head) cfs
 
         "list" ->
           let
+            att = createAttrs ("itemType" : reservedKeys) elementAttributes
             it = elementAttributes ^? at "itemType" . _Just . _QName
-            st = elementNodes ^.. folded . XML._Element . _SimpleType
+            st = elementNodes ^.. folded . XML._Element . _SimpleType . _2
           in
           Just $ STList i att it (st ^? _head)
 
         "union" ->
           let
+            att = createAttrs ("memberTypes" : reservedKeys) elementAttributes
             mts =
               toListOf (_Just . to T.words . folded . _QName) <$>
               (elementAttributes ^? at "memberTypes") 
@@ -220,19 +247,20 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
               elementNodes ^..
               folded .
               XML._Element .
-              _SimpleType
+              _SimpleType . _2
           in
           Just $ STUnion i att mts (if null sts then Nothing else Just sts)
-
         _ -> Nothing
 
+      withNamespace ns el
+
 class AsSimpleType s where
-  _SimpleType :: Prism' s SimpleType
+  _SimpleType :: Prism' s (Namespaced SimpleType)
 
 instance AsSimpleType XML.Element where
   _SimpleType = prism' simpleTypeToElement elementToSimpleType
     where
-      simpleTypeToElement :: SimpleType -> XML.Element
+      simpleTypeToElement :: Namespaced SimpleType -> XML.Element
       simpleTypeToElement =
         toElement
         ToElement
@@ -241,28 +269,32 @@ instance AsSimpleType XML.Element where
             [ (,) [qn|name|] . review _NCName <$> _stName
             , (,) [qn|final|] . review _Final <$> _stFinal
             ]
-        , teContents = [Fold $ stContent . re _SimpleTypeContent]
+        , teContents =
+            [ TEContent (Fold stContent) (Fold $ re _SimpleTypeContent) ]
         }
 
-      elementToSimpleType :: XML.Element -> Maybe SimpleType
+      elementToSimpleType :: XML.Element -> Maybe (Namespaced SimpleType)
       elementToSimpleType XML.Element{..} =
         let
+          reservedKeys = ["id", "final", "name"]
+          _stAttrs = createAttrs reservedKeys elementAttributes
           _stID = elementAttributes ^? at "id" . _Just . _NCName
-          _stAttrs = emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
           _stFinal = elementAttributes ^? at "final" . _Just . _Final
           _stName = elementAttributes ^? at "name" . _Just . _NCName
           maybeStContent =
-            (elementNodes ^.. folded . XML._Element . _SimpleTypeContent) ^? _head
+            (elementNodes ^.. folded . XML._Element . _SimpleTypeContent . _2) ^? _head
+          ns = elementName ^. XML._nameNamespace
         in do
           _stContent <- maybeStContent
-          case XML.nameLocalName elementName of
+          el <- case XML.nameLocalName elementName of
             "simpleType" -> Just SimpleType{..}
             _ -> Nothing
+          withNamespace ns el
 
-_SimpleAttributeGroup :: Prism' XML.Element SimpleAttributeGroup
+_SimpleAttributeGroup :: Prism' XML.Element (Namespaced SimpleAttributeGroup)
 _SimpleAttributeGroup = prism' sagToElement elementToSag
   where
-    sagToElement :: SimpleAttributeGroup -> XML.Element
+    sagToElement :: Namespaced SimpleAttributeGroup -> XML.Element
     sagToElement = toElement
       ToElement
       { teName = const "attributeGroup"
@@ -271,23 +303,26 @@ _SimpleAttributeGroup = prism' sagToElement elementToSag
       , teContents = []
       }
 
-    elementToSag :: XML.Element -> Maybe SimpleAttributeGroup
-    elementToSag XML.Element{..} =
-      case XML.nameLocalName elementName of
+    elementToSag :: XML.Element -> Maybe (Namespaced SimpleAttributeGroup)
+    elementToSag XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "attributeGroup" ->
           let
+            reservedKeys = ["id", "ref"]
             _sagID = elementAttributes ^? at "id" . _Just . _NCName
             _sagRef = elementAttributes ^? at "ref" . _Just . _QName
-            _sagAttrs = emptyAttrs & attrs .~
-              M.mapKeys nameToQName elementAttributes
+            _sagAttrs = createAttrs reservedKeys elementAttributes
           in
           Just SimpleAttributeGroup{..}
         _ -> Nothing
+      withNamespace ns el
 
-_AnyAttribute :: Prism' XML.Element AnyAttribute
+_AnyAttribute :: Prism' XML.Element (Namespaced AnyAttribute)
 _AnyAttribute = prism' aaToElement elementToAa
   where
-    aaToElement :: AnyAttribute -> XML.Element
+    aaToElement :: Namespaced AnyAttribute -> XML.Element
     aaToElement = toElement
       ToElement
       { teName = const "anyAttribute"
@@ -302,221 +337,238 @@ _AnyAttribute = prism' aaToElement elementToAa
       , teContents = [] 
       }
 
-    elementToAa :: XML.Element -> Maybe AnyAttribute
-    elementToAa XML.Element{..} =
-      case XML.nameLocalName elementName of
+    elementToAa :: XML.Element -> Maybe (Namespaced AnyAttribute)
+    elementToAa XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "anyAttribute" ->
           let
+            reservedKeys = ["id", "namespace", "processContents"]
             _aaID =
               elementAttributes ^? at "id" . _Just . _NCName
             _aaNamespace =
               elementAttributes ^? at "namespace" . _Just . _Namespace
             _aaProcessContents = 
               elementAttributes ^? at "processContents" . _Just . _ProcessContents
-            _aaAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+            _aaAttrs = createAttrs reservedKeys elementAttributes
           in
           Just AnyAttribute{..}
         _ -> Nothing
+      withNamespace ns el
 
-_SimpleRestriction :: Prism' XML.Element SimpleRestriction
+prodDist :: Iso' (Either (a, b) (a, c)) (a, Either b c)
+prodDist =
+  iso
+    (\case
+        Left (a,b) -> (a, Left b)
+        Right (a,c) -> (a, Right c))
+    (\case
+        (a, Left b) -> Left (a,b)
+        (a, Right c) -> Right (a, c))
+
+_SimpleRestriction :: Prism' XML.Element (Namespaced SimpleRestriction)
 _SimpleRestriction = prism' srToElement elementToSr
   where
-    srToElement :: SimpleRestriction -> XML.Element
+    srToElement :: Namespaced SimpleRestriction -> XML.Element
     srToElement = toElement
       ToElement
       { teName = const "restriction"
       , teAttrs = \SimpleRestriction{..} ->
         [ (,) [qn|base|] . review _QName <$> _srsBase ]
       , teContents =
-        [ Fold $ srsType . _Just . re _SimpleType
-        , Fold $ srsConstraints . folded . re _ConstraintFacet
-        , Fold $
-          srsAttributeSpec .
-          folded .
-          re (without _Attribute _SimpleAttributeGroup) .
-          bothEither
-        , Fold $ srsAnyAttribute . _Just . re _AnyAttribute
+        [ TEContent (Fold $ srsType . _Just) (Fold $ re _SimpleType)
+        , TEContent (Fold $ srsConstraints . folded) (Fold $ re _ConstraintFacet)
+        , TEContent
+          (Fold $ srsAttributeSpec . folded)
+          (Fold $ re prodDist . re (without _Attribute _SimpleAttributeGroup) . bothEither)
+        , TEContent (Fold $ srsAnyAttribute . _Just) (Fold $ re _AnyAttribute)
         ]
       }
 
-    elementToSr :: XML.Element -> Maybe SimpleRestriction
-    elementToSr XML.Element{..} =
-      case XML.nameLocalName elementName of
+    elementToSr :: XML.Element -> Maybe (Namespaced SimpleRestriction)
+    elementToSr XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "restriction" ->
           let
+            reservedKeys = ["base", "id"]
             _srsBase = elementAttributes ^? at "base" . _Just . _QName
             _srsID = elementAttributes ^? at "id" . _Just . _NCName
-            _srsAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
-            _srsType = elementNodes ^? folded . XML._Element . _SimpleType
+            _srsAttrs = createAttrs reservedKeys elementAttributes
+            _srsType = elementNodes ^? folded . XML._Element . _SimpleType . _2
             _srsConstraints =
-              elementNodes ^.. folded . XML._Element . _ConstraintFacet
+              elementNodes ^.. folded . XML._Element . _ConstraintFacet . _2
             _srsAttributeSpec =
               elementNodes ^..
               folded .
               XML._Element .
               failing
-                (_Attribute . re _Left)
-                (_SimpleAttributeGroup . re _Right)
+                (_Attribute . _2 . re _Left)
+                (_SimpleAttributeGroup . _2 . re _Right)
             _srsAnyAttribute =
-              elementNodes ^? folded . XML._Element . _AnyAttribute
+              elementNodes ^? folded . XML._Element . _AnyAttribute . _2
           in
           Just SimpleRestriction{..}
         _ -> Nothing
+      withNamespace ns el
 
-_SimpleExtension :: Prism' XML.Element SimpleExtension
+_SimpleExtension :: Prism' XML.Element (Namespaced SimpleExtension)
 _SimpleExtension = prism' seToElement elementToSe
   where
-    seToElement :: SimpleExtension -> XML.Element
+    seToElement :: Namespaced SimpleExtension -> XML.Element
     seToElement = toElement
       ToElement
       { teName = const "extension"
       , teAttrs = \SimpleExtension{..} ->
           [ (,) [qn|base|] . review _QName <$> _sexBase ]
       , teContents =
-        [ Fold $
-          sexAttributeSpec .
-          folded .
-          re (without _Attribute _SimpleAttributeGroup) .
-          bothEither
-        , Fold $ sexAnyAttribute . _Just . re _AnyAttribute
+        [ TEContent
+          (Fold $ sexAttributeSpec . folded)
+          (Fold $ re prodDist . re (without _Attribute _SimpleAttributeGroup) . bothEither)
+        , TEContent (Fold $ sexAnyAttribute . _Just) (Fold $ re _AnyAttribute)
         ]
       }
 
-    elementToSe :: XML.Element -> Maybe SimpleExtension
-    elementToSe XML.Element{..} =
-      case XML.nameLocalName elementName of
+    elementToSe :: XML.Element -> Maybe (Namespaced SimpleExtension)
+    elementToSe XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "extension" ->
           let
+            reservedKeys = ["base", "id"]
             _sexBase = elementAttributes ^? at "base" . _Just . _QName
             _sexID = elementAttributes ^? at "id" . _Just . _NCName
-            _sexAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+            _sexAttrs = createAttrs reservedKeys elementAttributes
             _sexAttributeSpec =
               elementNodes ^..
               folded .
               XML._Element .
               failing
-                (_Attribute . re _Left)
-                (_SimpleAttributeGroup . re _Right)
+                (_Attribute . _2 . re _Left)
+                (_SimpleAttributeGroup . _2 . re _Right)
             _sexAnyAttribute =
-              elementNodes ^? folded . XML._Element . _AnyAttribute
+              elementNodes ^? folded . XML._Element . _AnyAttribute . _2
           in
           Just SimpleExtension{..}
         _ -> Nothing
+      withNamespace ns el
 
-_CTGroupDefinition :: Prism' XML.Element CTGroupDefinition
+_CTGroupDefinition :: Prism' XML.Element (Namespaced CTGroupDefinition)
 _CTGroupDefinition =
   prism'
     (\case
-        CTGDGroup g -> review _Group g
-        CTGDAll a -> review _All a
-        CTGDChoice c -> review _Choice c
-        CTGDSequence s -> review _Sequence s)
+        (ns, CTGDGroup g) -> review _Group (ns, g)
+        (ns, CTGDAll a) -> review _All (ns, a)
+        (ns, CTGDChoice c) -> review _Choice (ns, c)
+        (ns, CTGDSequence s) -> review _Sequence (ns, s))
 
     $ \e ->
-        (CTGDGroup <$> e ^? _Group) <|>
-        (CTGDAll <$> e ^? _All) <|>
-        (CTGDChoice <$> e ^? _Choice) <|>
-        (CTGDSequence <$> e ^? _Sequence)
+        (second CTGDGroup <$> e ^? _Group) <|>
+        (second CTGDAll <$> e ^? _All) <|>
+        (second CTGDChoice <$> e ^? _Choice) <|>
+        (second CTGDSequence <$> e ^? _Sequence)
 
-_ComplexRestriction :: Prism' XML.Element ComplexRestriction
+_ComplexRestriction :: Prism' XML.Element (Namespaced ComplexRestriction)
 _ComplexRestriction = prism' crToElement elementToCr
   where
-    crToElement :: ComplexRestriction -> XML.Element
+    crToElement :: Namespaced ComplexRestriction -> XML.Element
     crToElement = toElement
       ToElement
       { teName = const "restriction"
       , teAttrs = \ComplexRestriction{..} ->
         [ (,) [qn|base|] . review _QName <$> _crsBase ]
       , teContents =
-        [ Fold $ crsGroupDefinition . _Just . re _CTGroupDefinition
-        , Fold $
-          crsAttributeSpec .
-          folded .
-          re (without _Attribute _AttributeGroup) .
-          bothEither
-        , Fold $ crsAnyAttribute . _Just . re _AnyAttribute
+        [ TEContent (Fold $ crsGroupDefinition . _Just) (Fold $ re _CTGroupDefinition)
+        , TEContent
+          (Fold $ crsAttributeSpec . folded)
+          (Fold $ re prodDist . re (without _Attribute _AttributeGroup) . bothEither)
+        , TEContent (Fold $ crsAnyAttribute . _Just) (Fold $ re _AnyAttribute)
         ]
       }
 
-    elementToCr :: XML.Element -> Maybe ComplexRestriction
-    elementToCr XML.Element{..} =
-      case XML.nameLocalName elementName of
+    elementToCr :: XML.Element -> Maybe (Namespaced ComplexRestriction)
+    elementToCr XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "restriction" ->
           let
+            reservedKeys = ["id", "base"]
             _crsID =
               elementAttributes ^? at "id" . _Just . _NCName
             _crsBase =
               elementAttributes ^? at "base" . _Just . _QName
-            _crsAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+            _crsAttrs = createAttrs reservedKeys elementAttributes
             _crsGroupDefinition =
-              elementNodes ^? folded . XML._Element . _CTGroupDefinition
+              elementNodes ^? folded . XML._Element . _CTGroupDefinition . _2
             _crsAttributeSpec =
               elementNodes ^..
               folded .
               XML._Element .
-              failing (_Attribute . re _Left) (_AttributeGroup . re _Right)
+              failing (_Attribute . _2 . re _Left) (_AttributeGroup . _2 . re _Right)
             _crsAnyAttribute =
-              elementNodes ^? folded . XML._Element . _AnyAttribute
+              elementNodes ^? folded . XML._Element . _AnyAttribute . _2
           in
           Just ComplexRestriction{..}
         _ -> Nothing
+      withNamespace ns el
 
-_ComplexExtension :: Prism' XML.Element ComplexExtension
+_ComplexExtension :: Prism' XML.Element (Namespaced ComplexExtension)
 _ComplexExtension = prism' ce ec
   where
-    ce :: ComplexExtension -> XML.Element
+    ce :: Namespaced ComplexExtension -> XML.Element
     ce = toElement
       ToElement
       { teName = const "extension"
       , teAttrs = \ComplexExtension{..} ->
           [ (,) [qn|base|] . review _QName <$> _cexBase ]
       , teContents =
-          [ Fold $ cexGroupDefinition . _Just . re _CTGroupDefinition
-          , Fold $
-            cexAttributeSpec .
-            folded .
-            re (without _Attribute _AttributeGroup) .
-            bothEither
-          , Fold $ cexAnyAttribute . _Just . re _AnyAttribute
+          [ TEContent (Fold $ cexGroupDefinition . _Just) (Fold $ re _CTGroupDefinition)
+          , TEContent
+            (Fold $ cexAttributeSpec . folded)
+            (Fold $ re prodDist . re (without _Attribute _AttributeGroup) . bothEither)
+          , TEContent (Fold $ cexAnyAttribute . _Just) (Fold $ re _AnyAttribute)
           ]
       }
 
-    ec :: XML.Element -> Maybe ComplexExtension
-    ec XML.Element{..} =
-      case XML.nameLocalName elementName of
+    ec :: XML.Element -> Maybe (Namespaced ComplexExtension)
+    ec XML.Element{..} = do
+      let
+        ns = elementName ^. XML._nameNamespace
+      el <- case XML.nameLocalName elementName of
         "extension" ->
           let
+            reservedKeys = ["id", "base"]
             _cexID =
               elementAttributes ^? at "id" . _Just . _NCName
             _cexBase =
               elementAttributes ^? at "base" . _Just . _QName
-            _cexAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+            _cexAttrs = createAttrs reservedKeys elementAttributes
             _cexGroupDefinition =
-              elementNodes ^? folded . XML._Element . _CTGroupDefinition
+              elementNodes ^? folded . XML._Element . _CTGroupDefinition . _2
             _cexAttributeSpec =
               elementNodes ^..
               folded .
               XML._Element .
-              failing (_Attribute . re _Left) (_AttributeGroup . re _Right)
+              failing (_Attribute . _2 . re _Left) (_AttributeGroup . _2 . re _Right)
             _cexAnyAttribute =
-              elementNodes ^? folded . XML._Element . _AnyAttribute
+              elementNodes ^? folded . XML._Element . _AnyAttribute . _2
           in
           Just ComplexExtension{..}
         _ -> Nothing
+      withNamespace ns el
 
 bothEither :: Iso' (Either a a) a
 bothEither = iso (either id id) Left
 
-_CTContent :: Prism' [XML.Element] CTContent
+_CTContent :: Prism' [XML.Element] (Namespaced CTContent)
 _CTContent = prism' ctContentToElements elementsToCtContent
   where
-    ctContentToElements :: CTContent -> [XML.Element]
-    ctContentToElements c =
+    ctContentToElements :: Namespaced CTContent -> [XML.Element]
+    ctContentToElements (ns, c) =
       case c of
         CTSimpleContent{..} ->
           [ XML.Element
@@ -524,8 +576,8 @@ _CTContent = prism' ctContentToElements elementsToCtContent
             , elementAttributes = toNameTextMap _ctscAttrs
             , elementNodes =
                 [ case _ctscContent of
-                    Left a -> review (XML._Element . _SimpleRestriction) a
-                    Right b -> review (XML._Element . _SimpleExtension) b
+                    Left a -> review (XML._Element . _SimpleRestriction) (ns, a)
+                    Right b -> review (XML._Element . _SimpleExtension) (ns, b)
                 ]
             }
           ]
@@ -535,18 +587,22 @@ _CTContent = prism' ctContentToElements elementsToCtContent
             , elementAttributes = toNameTextMap _ctccAttrs
             , elementNodes =
                 [ case _ctccContent of
-                    Left a -> review (XML._Element . _ComplexRestriction) a
-                    Right b -> review (XML._Element . _ComplexExtension) b
+                    Left a -> review (XML._Element . _ComplexRestriction) (ns, a)
+                    Right b -> review (XML._Element . _ComplexExtension) (ns, b)
                 ]
             }
           ]
         CTGroupContent{..} ->
-          (_ctgcGroupDefinition ^.. _Just . re _CTGroupDefinition) <>
+          (_ctgcGroupDefinition ^.. _Just . to ((,) ns) . re _CTGroupDefinition) <>
           (_ctgcAttributeSpec ^..
-            folded . re (without _Attribute _AttributeGroup) . bothEither) <>
-          (_ctgcAnyAttribute ^.. _Just . re _AnyAttribute)
+            folded .
+            to ((,) ns) .
+            re prodDist .
+            re (without _Attribute _AttributeGroup) .
+            bothEither) <>
+          (_ctgcAnyAttribute ^.. _Just . to ((,) ns) . re _AnyAttribute)
 
-    elementsToCtContent :: [XML.Element] -> Maybe CTContent
+    elementsToCtContent :: [XML.Element] -> Maybe (Namespaced CTContent)
     elementsToCtContent [] = Nothing
     elementsToCtContent es =
       let
@@ -554,55 +610,60 @@ _CTContent = prism' ctContentToElements elementsToCtContent
           XML.Element{..} <- 
             es ^? folded . filtered ((==) "simpleContent" . XML.elementName)
           let
+            ns = elementName ^. XML._nameNamespace
             _ctscID = elementAttributes ^? at "id" . _Just . _NCName
             _ctscAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+              createAttrs ["id"] elementAttributes
           _ctscContent <-
             elementNodes ^?
               folded .
               XML._Element .
               failing
-                (_SimpleRestriction . re _Left)
-                (_SimpleExtension . re _Right)
-          pure CTSimpleContent{..}
+                (_SimpleRestriction . _2 . re _Left)
+                (_SimpleExtension . _2 . re _Right)
+          withNamespace ns CTSimpleContent{..}
              
         complexContent = do
           XML.Element{..} <- 
             es ^? folded . filtered ((==) "complexContent" . XML.elementName)
           let
+            ns = elementName ^. XML._nameNamespace
             _ctccID = elementAttributes ^? at "id" . _Just . _NCName
             _ctccMixed = elementAttributes ^? at "mixed" . _Just . _Boolean
             _ctccAttrs =
-              emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+              createAttrs ["id", "mixed"] elementAttributes
           _ctccContent <-
             elementNodes ^?
               folded .
               XML._Element .
               failing
-                (_ComplexRestriction . re _Left)
-                (_ComplexExtension . re _Right)
-          pure CTComplexContent{..}
+                (_ComplexRestriction . _2 . re _Left)
+                (_ComplexExtension . _2 . re _Right)
+          withNamespace ns CTComplexContent{..}
           
         groupContent =
           let
+            ns = es ^. _head . XML.name . XML._nameNamespace
             _ctgcGroupDefinition =
-              es ^? folded . _CTGroupDefinition
+              es ^? folded . _CTGroupDefinition . _2
             _ctgcAttributeSpec =
               es ^..
               folded .
-              failing (_Attribute . re _Left) (_AttributeGroup . re _Right)
+              failing
+                (_Attribute . _2 . re _Left)
+                (_AttributeGroup . _2 . re _Right)
             _ctgcAnyAttribute =
-              es ^? folded . _AnyAttribute
-          in CTGroupContent{..}
-      in simpleContent <|> complexContent <|> pure groupContent
+              es ^? folded . _AnyAttribute . _2
+          in withNamespace ns CTGroupContent{..}
+      in simpleContent <|> complexContent <|> groupContent
 
 class AsComplexType s where
-  _ComplexType :: Prism' s ComplexType
+  _ComplexType :: Prism' s (Namespaced ComplexType)
 
 instance AsComplexType XML.Element where
   _ComplexType = prism' complexTypeToElement elementToComplexType
     where
-      complexTypeToElement :: ComplexType -> XML.Element
+      complexTypeToElement :: Namespaced ComplexType -> XML.Element
       complexTypeToElement =
         toElement ToElement
         { teName = const "complexType"
@@ -613,18 +674,22 @@ instance AsComplexType XML.Element where
             , (,) [qn|mixed|] . review _Boolean <$> _ctMixed
             , (,) [qn|name|] . review _NCName <$> _ctName
             ]
-        , teContents = [Fold $ ctContent . re _CTContent . folded]
+        , teContents =
+          [ TEContent (Fold ctContent) (Fold $ re _CTContent . folded) ]
         }
 
-      elementToComplexType :: XML.Element -> Maybe ComplexType
-      elementToComplexType XML.Element{..} =
-        case XML.nameLocalName elementName of
+      elementToComplexType :: XML.Element -> Maybe (Namespaced ComplexType)
+      elementToComplexType XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "complexType" -> do
             let
+              reservedKeys = ["id", "abstract", "block", "final", "mixed", "name"]
               _ctID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _ctAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _ctAbstract =
                 elementAttributes ^? at "abstract" . _Just . _Boolean
               _ctBlock =
@@ -636,24 +701,25 @@ instance AsComplexType XML.Element where
               _ctName =
                 elementAttributes ^? at "name" . _Just . _NCName
             _ctContent <-
-              elementNodes ^? to (^.. folded . XML._Element) . _CTContent
+              elementNodes ^? to (^.. folded . XML._Element) . _CTContent . _2
             Just ComplexType{..}
           _ -> Nothing
+        withNamespace ns el
 
-_GroupContent :: Prism' XML.Element GroupContent
+_GroupContent :: Prism' XML.Element (Namespaced GroupContent)
 _GroupContent = prism' ge eg
   where
-    ge :: GroupContent -> XML.Element
+    ge :: Namespaced GroupContent -> XML.Element
     ge = \case
-      GCAll a -> review _All a
-      GCChoice c -> review _Choice c
-      GCSequence s -> review _Sequence s
+      (ns, GCAll a) -> review _All (ns, a)
+      (ns, GCChoice c) -> review _Choice (ns, c)
+      (ns, GCSequence s) -> review _Sequence (ns, s)
 
-    eg :: XML.Element -> Maybe GroupContent
+    eg :: XML.Element -> Maybe (Namespaced GroupContent)
     eg e =
-      (GCAll <$> e ^? _All) <|>
-      (GCChoice <$> e ^? _Choice) <|>
-      (GCSequence <$> e ^? _Sequence)
+      (second GCAll <$> e ^? _All) <|>
+      (second GCChoice <$> e ^? _Choice) <|>
+      (second GCSequence <$> e ^? _Sequence)
 
 _Occurances :: Prism' Text Occurances
 _Occurances =
@@ -667,12 +733,12 @@ _Occurances =
         a -> Bounded <$> (a ^? _NonNegative))
 
 class AsGroup s where
-  _Group :: Prism' s Group
+  _Group :: Prism' s (Namespaced Group)
 
 instance AsGroup XML.Element where
   _Group = prism' ge eg
     where
-      ge :: Group -> XML.Element
+      ge :: Namespaced Group -> XML.Element
       ge = toElement
         ToElement
         { teName = const "group"
@@ -682,14 +748,18 @@ instance AsGroup XML.Element where
           , (,) [qn|name|] . review _NCName <$> _grName
           , (,) [qn|ref|] . review _QName <$> _grRef
           ]
-        , teContents = [ Fold $ grContent . _Just . re _GroupContent ] 
+        , teContents =
+          [ TEContent (Fold $ grContent . _Just) (Fold $ re _GroupContent) ] 
         }
 
-      eg :: XML.Element -> Maybe Group
-      eg XML.Element{..} =
-        case XML.nameLocalName elementName of
+      eg :: XML.Element -> Maybe (Namespaced Group)
+      eg XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "group" ->
             let
+              reservedKeys = ["id", "maxOccurs", "minOccurs", "name", "ref"]
               _grID = elementAttributes ^? at "id" . _Just . _NCName
               _grMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
@@ -700,12 +770,13 @@ instance AsGroup XML.Element where
               _grRef =
                 elementAttributes ^? at "ref" . _Just . _QName
               _grAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _grContent =
-                elementNodes ^? folded . XML._Element . _GroupContent
+                elementNodes ^? folded . XML._Element . _GroupContent . _2
             in
             Just Group{..}
           _ -> Nothing
+        withNamespace ns el
 
 _Zero :: Prism' Text Zero
 _Zero =
@@ -724,12 +795,12 @@ _One =
         _ -> Nothing)
   
 class AsAll s where
-  _All :: Prism' s All
+  _All :: Prism' s (Namespaced All)
 
 instance AsAll XML.Element where
   _All = prism' ae ea
     where
-      ae :: All -> XML.Element
+      ae :: Namespaced All -> XML.Element
       ae = toElement
         ToElement
         { teName = const "all"
@@ -741,38 +812,42 @@ instance AsAll XML.Element where
             _allMinOccurs)
           ]
         , teContents =
-          [ Fold $ allContent . folded . re _Element ]
+          [ TEContent (Fold $ allContent . folded) (Fold $ re _Element) ]
         }
 
-      ea :: XML.Element -> Maybe All
-      ea XML.Element{..} =
-        case XML.nameLocalName elementName of
+      ea :: XML.Element -> Maybe (Namespaced All)
+      ea XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "all" ->
             let
+              reservedKeys = ["id", "maxOccurs", "minOccurs"]
               _allID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _allMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _One
               _allMinOccurs =
                 elementAttributes ^?
-                at "maxOccurs" .
+                at "minOccurs" .
                 _Just .
                 failing (_Zero . re _Left) (_One . re _Right)
               _allAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _allContent =
-                elementNodes ^.. folded . XML._Element . _Element
+                elementNodes ^.. folded . XML._Element . _Element . _2
             in
             Just All{..}
           _ -> Nothing
+        withNamespace ns el
 
 class AsAny s where
-  _Any :: Prism' s Any
+  _Any :: Prism' s (Namespaced Any)
 
 instance AsAny XML.Element where
   _Any = prism' ae ea
     where
-      ae :: Any -> XML.Element
+      ae :: Namespaced Any -> XML.Element
       ae = toElement
         ToElement
         { teName = const "any"
@@ -787,11 +862,14 @@ instance AsAny XML.Element where
         , teContents = []
         }
 
-      ea :: XML.Element -> Maybe Any
-      ea XML.Element{..} =
-        case XML.nameLocalName elementName of
+      ea :: XML.Element -> Maybe (Namespaced Any)
+      ea XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "any" ->
             let
+              reservedKeys = ["id", "maxOccurs", "minOccurs", "namespace", "processContents"]
               _anyID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _anyMaxOccurs =
@@ -806,35 +884,36 @@ instance AsAny XML.Element where
                 _Just .
                 _ProcessContents
               _anyAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
             in
             Just Any{..}
           _ -> Nothing
+        withNamespace ns el
 
 class AsChoiceContent s where
-  _ChoiceContent :: Prism' s ChoiceContent
+  _ChoiceContent :: Prism' s (Namespaced ChoiceContent)
 
 instance AsChoiceContent XML.Element where
   _ChoiceContent =
     prism'
       (\case
-         CCElement e -> review _Element e
-         CCGroup g -> review _Group g
-         CCSequence s -> review _Sequence s
-         CCAny a -> review _Any a)
+         (ns, CCElement e) -> review _Element (ns, e)
+         (ns, CCGroup g) -> review _Group (ns, g)
+         (ns, CCSequence s) -> review _Sequence (ns, s)
+         (ns, CCAny a) -> review _Any (ns, a))
       (\e ->
-         (CCElement <$> preview _Element e) <|>
-         (CCGroup <$> preview _Group e) <|>
-         (CCSequence <$> preview _Sequence e) <|>
-         (CCAny <$> preview _Any e))
+         (second CCElement <$> preview _Element e) <|>
+         (second CCGroup <$> preview _Group e) <|>
+         (second CCSequence <$> preview _Sequence e) <|>
+         (second CCAny <$> preview _Any e))
   
 class AsChoice s where
-  _Choice :: Prism' s Choice
+  _Choice :: Prism' s (Namespaced Choice)
   
 instance AsChoice XML.Element where
   _Choice = prism' ce ec
     where
-      ce :: Choice -> XML.Element
+      ce :: Namespaced Choice -> XML.Element
       ce = toElement
         ToElement
         { teName = const "choice"
@@ -844,53 +923,57 @@ instance AsChoice XML.Element where
           , (,) [qn|minOccurs|] . review _NonNegative <$> _choiceMinOccurs
           ]
         , teContents =
-          [ Fold $ choiceContent . folded . re _ChoiceContent ]
+          [ TEContent (Fold $ choiceContent . folded) (Fold $ re _ChoiceContent) ]
         }
 
-      ec :: XML.Element -> Maybe Choice
-      ec XML.Element{..} =
-        case XML.nameLocalName elementName of
+      ec :: XML.Element -> Maybe (Namespaced Choice)
+      ec XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "choice" ->
             let
+              reservedKeys = ["id", "maxOccurs", "minOccurs"]
               _choiceID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _choiceMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _choiceMinOccurs =
-                elementAttributes ^? at "maxOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
               _choiceAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _choiceContent =
-                elementNodes ^.. folded . XML._Element . _ChoiceContent
+                elementNodes ^.. folded . XML._Element . _ChoiceContent . _2
             in
             Just Choice{..}
           _ -> Nothing
+        withNamespace ns el
 
 class AsSequenceContent s where
-  _SequenceContent :: Prism' s SequenceContent
+  _SequenceContent :: Prism' s (Namespaced SequenceContent)
 
 instance AsSequenceContent XML.Element where
   _SequenceContent =
     prism'
       (\case
-          SCElement e -> review _Element e
-          SCGroup g -> review _Group g
-          SCSequence s -> review _Sequence s
-          SCAny a -> review _Any a)
+          (ns, SCElement e) -> review _Element (ns, e)
+          (ns, SCGroup g) -> review _Group (ns, g)
+          (ns, SCSequence s) -> review _Sequence (ns, s)
+          (ns, SCAny a) -> review _Any (ns, a))
 
       (\e ->
-         (SCElement <$> preview _Element e) <|>
-         (SCGroup <$> preview _Group e) <|>
-         (SCSequence <$> preview _Sequence e) <|>
-         (SCAny <$> preview _Any e))
+         (second SCElement <$> preview _Element e) <|>
+         (second SCGroup <$> preview _Group e) <|>
+         (second SCSequence <$> preview _Sequence e) <|>
+         (second SCAny <$> preview _Any e))
 
 class AsSequence s where
-  _Sequence :: Prism' s Sequence
+  _Sequence :: Prism' s (Namespaced Sequence)
   
 instance AsSequence XML.Element where
   _Sequence = prism' se es
     where
-      se :: Sequence -> XML.Element
+      se :: Namespaced Sequence -> XML.Element
       se = toElement
         ToElement
         { teName = const "sequence"
@@ -900,50 +983,69 @@ instance AsSequence XML.Element where
           , (,) [qn|minOccurs|] . review _NonNegative <$> _sequenceMinOccurs
           ]
         , teContents =
-          [ Fold $ sequenceContent . folded . re _SequenceContent ]
+          [ TEContent (Fold $ sequenceContent . folded) (Fold $ re _SequenceContent) ]
         }
 
-      es :: XML.Element -> Maybe Sequence
-      es XML.Element{..} =
-        case XML.nameLocalName elementName of
+      es :: XML.Element -> Maybe (Namespaced Sequence)
+      es XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "sequence" ->
             let
+              reservedKeys = ["id", "maxOccurs", "minOccurs"]
               _sequenceID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _sequenceMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _sequenceMinOccurs =
-                elementAttributes ^? at "maxOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
               _sequenceAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _sequenceContent =
-                elementNodes ^.. folded . XML._Element . _SequenceContent
+                elementNodes ^.. folded . XML._Element . _SequenceContent . _2
             in
             Just Sequence{..}
           _ -> Nothing
+        withNamespace ns el
 
-instance AsSequence CTGroupDefinition where
-  _Sequence = prism'
-    CTGDSequence $
-    \case
-      CTGDSequence a -> Just a
-      _ -> Nothing
+instance AsSequence (Namespaced CTGroupDefinition) where
+  _Sequence =
+    prism'
+      (second CTGDSequence)
+      (\case
+          (ns, CTGDSequence a) -> Just (ns, a)
+          _ -> Nothing)
       
+instance AsSequence (Namespaced CTContent) where
+  _Sequence = prism'
+    (second $ \s -> emptyCTGroupContent { _ctgcGroupDefinition = Just (CTGDSequence s) })
+    (\case
+        (ns, CTGroupContent{..}) ->
+          (_ctgcGroupDefinition ^? _Just . to ((,) ns) . _Sequence . _2) >>= pure . (,) ns
+        _ -> Nothing)
+    
 instance AsSequence CTContent where
   _Sequence = prism'
-    (\v -> emptyCTGroupContent { _ctgcGroupDefinition = Just (_Sequence # v) })
-    (maybe Nothing (^? _Sequence) . _ctgcGroupDefinition)
+    (\(_, s) -> emptyCTGroupContent { _ctgcGroupDefinition = Just (CTGDSequence s) })
+    (\case
+        CTGroupContent{..} ->
+          (_ctgcGroupDefinition ^?
+           _Just .
+           to ((,) (Nothing :: Maybe NCName)) .
+           _Sequence . _2) >>= pure . (,) Nothing
+        _ -> Nothing)
   
 class AsAttributeGroup s a where
-  _AttributeGroup :: Prism' s a
+  _AttributeGroup :: Prism' s (Namespaced a)
 
-instance AsAttributeGroup AttributeGroup AttributeGroup where
+instance AsAttributeGroup (Namespaced AttributeGroup) AttributeGroup where
   _AttributeGroup = prism' id Just
   
 instance AsAttributeGroup XML.Element AttributeGroup where
   _AttributeGroup = prism' agToElement elementToAg
     where
-      agToElement :: AttributeGroup -> XML.Element
+      agToElement :: Namespaced AttributeGroup -> XML.Element
       agToElement = toElement
         ToElement
         { teName = const "attributeGroup"
@@ -953,20 +1055,21 @@ instance AsAttributeGroup XML.Element AttributeGroup where
           , (,) [qn|ref|] . review _QName <$> _agRef
           ]
         , teContents =
-          [ Fold $
-            agAttributeSpec .
-            folded .
-            re (without _Attribute _AttributeGroup) .
-            bothEither
-          , Fold $ agAnyAttribute . _Just . re _AnyAttribute
+          [ TEContent
+            (Fold $ agAttributeSpec . folded)
+            (Fold $ re prodDist . re (without _Attribute _AttributeGroup) . bothEither)
+          , TEContent (Fold $ agAnyAttribute . _Just) (Fold $ re _AnyAttribute)
           ]
         }
 
-      elementToAg :: XML.Element -> Maybe AttributeGroup
-      elementToAg XML.Element{..} =
-        case XML.nameLocalName elementName of
+      elementToAg :: XML.Element -> Maybe (Namespaced AttributeGroup)
+      elementToAg XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "attributeGroup" ->
             let
+              reservedKeys = ["id", "name", "ref"]
               _agID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _agName =
@@ -974,26 +1077,27 @@ instance AsAttributeGroup XML.Element AttributeGroup where
               _agRef =
                 elementAttributes ^? at "ref" . _Just . _QName
               _agAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _agAttributeSpec =
                 elementNodes ^..
                 folded .
                 XML._Element .
-                failing (_Attribute . re _Left) (_AttributeGroup . re _Right)
+                failing (_Attribute . _2 . re _Left) (_AttributeGroup . _2 . re _Right)
               _agAnyAttribute =
                 elementNodes ^?
                 folded .
                 XML._Element .
-                _AnyAttribute
+                _AnyAttribute . _2
             in
             Just AttributeGroup{..}
           _ -> Nothing
+        withNamespace ns el
       
 instance AsAttributeGroup XML.Element SimpleAttributeGroup where
   _AttributeGroup = _SimpleAttributeGroup
   
 class AsAttribute s where
-  _Attribute :: Prism' s Attribute
+  _Attribute :: Prism' s (Namespaced Attribute)
 
 _Use :: Prism' Text Use
 _Use =
@@ -1012,7 +1116,7 @@ _Use =
 instance AsAttribute XML.Element where
   _Attribute = prism' attToElement elementToAtt
     where
-      attToElement :: Attribute -> XML.Element
+      attToElement :: Namespaced Attribute -> XML.Element
       attToElement = toElement
         ToElement
         { teName = const "attribute"
@@ -1026,14 +1130,17 @@ instance AsAttribute XML.Element where
           , (,) [qn|use|] . review _Use <$> _attUse
           ]
         , teContents =
-          [ Fold $ attSimpleType . _Just . re _SimpleType ]
+          [ TEContent (Fold $ attSimpleType . _Just) (Fold $ re _SimpleType) ]
         }
 
-      elementToAtt :: XML.Element -> Maybe Attribute
-      elementToAtt XML.Element{..} =
-        case XML.nameLocalName elementName of
+      elementToAtt :: XML.Element -> Maybe (Namespaced Attribute)
+      elementToAtt XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "attribute" ->
             let
+              reservedKeys = ["id", "default", "fixed", "form", "name", "ref", "type", "use"]
               _attID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _attDefault =
@@ -1051,20 +1158,21 @@ instance AsAttribute XML.Element where
               _attUse =
                 elementAttributes ^? at "use" . _Just . _Use
               _attAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _attSimpleType =
-                elementNodes ^? folded . XML._Element . _SimpleType
+                elementNodes ^? folded . XML._Element . _SimpleType . _2
             in
             Just Attribute{..}
           _ -> Nothing
+        withNamespace ns el
 
 class AsNotation s where
-  _Notation :: Prism' s Notation
+  _Notation :: Prism' s (Namespaced Notation)
 
 instance AsNotation XML.Element where
   _Notation = prism' ne en
     where
-      ne :: Notation -> XML.Element
+      ne :: Namespaced Notation -> XML.Element
       ne = toElement
         ToElement
         { teName = const "notation"
@@ -1077,11 +1185,14 @@ instance AsNotation XML.Element where
         , teContents = []
         }
 
-      en :: XML.Element -> Maybe Notation
-      en XML.Element{..} =
-        case XML.nameLocalName elementName of
+      en :: XML.Element -> Maybe (Namespaced Notation)
+      en XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "notation" ->
             let
+              reservedKeys = ["id", "name", "public", "system"]
               _notID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _notName =
@@ -1091,13 +1202,14 @@ instance AsNotation XML.Element where
               _notSystem =
                 elementAttributes ^? at "system" . _Just . _URI
               _notAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
             in
             Just Notation{..}
           _ -> Nothing
+        withNamespace ns el
 
 class AsRestriction s a where
-  _Restriction :: Prism' s a
+  _Restriction :: Prism' s (Namespaced a)
 
 instance AsRestriction XML.Element SimpleRestriction where
   _Restriction = _SimpleRestriction
@@ -1106,7 +1218,7 @@ instance AsRestriction XML.Element ComplexRestriction where
   _Restriction = _ComplexRestriction
 
 class AsExtension s a where
-  _Extension :: Prism' s a
+  _Extension :: Prism' s (Namespaced a)
 
 instance AsExtension XML.Element SimpleExtension where
   _Extension = _SimpleExtension
@@ -1115,20 +1227,31 @@ instance AsExtension XML.Element ComplexExtension where
   _Extension = _ComplexExtension
 
 class AsElement s where
-  _Element :: Prism' s Element
-  _Element' :: NCName -> Review s Element
+  _Element :: Prism' s (Namespaced Element)
+  _Element' :: NCName -> Review s (Namespaced Element)
+  
+instance AsElement (Namespaced SequenceContent) where
+  _Element =
+    prism'
+      (second SCElement)
+      (\case
+          (ns, SCElement a) -> Just (ns, a)
+          _ -> Nothing)
+  _Element' name = unto (second $ \el -> SCElement el { _elName = Just name })
   
 instance AsElement SequenceContent where
-  _Element = prism' SCElement $
-    \case
-      SCElement a -> Just a
-      _ -> Nothing
-  _Element' name = unto (\el -> SCElement el { _elName = Just name })
+  _Element =
+    prism'
+      (SCElement . snd)
+      (\case
+          SCElement a -> Just (Nothing, a)
+          _ -> Nothing)
+  _Element' name = unto (\(_, el) -> SCElement el { _elName = Just name })
   
 instance AsElement XML.Element where
   _Element = prism' a b
     where
-      a :: Element -> XML.Element
+      a :: Namespaced Element -> XML.Element
       a = toElement
         ToElement
         { teName = const "element"
@@ -1143,19 +1266,29 @@ instance AsElement XML.Element where
           , (,) [qn|type|] . review _QName <$> _elTypeName
           ]
         , teContents =
-          [ Fold $
-            elTypeElement .
-            _Just .
-            re (without _SimpleType _ComplexType) .
-            bothEither
+          [ TEContent
+            (Fold $ elTypeElement . _Just)
+            (Fold $ re prodDist . re (without _SimpleType _ComplexType) . bothEither)
           ]
         }
 
-      b :: XML.Element -> Maybe Element
-      b XML.Element{..} =
-        case XML.nameLocalName elementName of
+      b :: XML.Element -> Maybe (Namespaced Element)
+      b XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "element" ->
             let
+              reservedKeys =
+                [ "id"
+                , "abstract"
+                , "form"
+                , "maxOccurs"
+                , "minOccurs"
+                , "name"
+                , "nillable"
+                , "type"
+                ]
               _elID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _elAbstract =
@@ -1176,25 +1309,26 @@ instance AsElement XML.Element where
                 elementNodes ^?
                 folded .
                 XML._Element .
-                failing (_SimpleType . re _Left) (_ComplexType . re _Right)
+                failing (_SimpleType . _2 . re _Left) (_ComplexType . _2 . re _Right)
               _elAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
             in
             Just Element{..}
           _ -> Nothing
+        withNamespace ns el
 
   _Element' name =
     prism'
-      (review _Element . (& elName .~ Just name))
-      ((\e -> guard (e ^. elName == Just name) $> e) <=< (^? _Element))
+      (review _Element . (& _2 . elName .~ Just name))
+      ((\e -> guard (e ^. _2 . elName == Just name) $> e) <=< (^? _Element))
 
 class AsInclude s where
-  _Include :: Prism' s Include
+  _Include :: Prism' s (Namespaced Include)
 
 instance AsInclude XML.Element where
   _Include = prism' ie ei
     where
-      ie :: Include -> XML.Element
+      ie :: Namespaced Include -> XML.Element
       ie = toElement
         ToElement
         { teName = const "include"
@@ -1205,28 +1339,31 @@ instance AsInclude XML.Element where
         , teContents = []
         }
 
-      ei :: XML.Element -> Maybe Include
-      ei XML.Element{..} =
-        case XML.nameLocalName elementName of
+      ei :: XML.Element -> Maybe (Namespaced Include)
+      ei XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "include" -> do
             let
               _incID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _incAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs ["id", "schemaLocation"] elementAttributes
                 
             _incSchemaLocation <-
                 elementAttributes ^? at "schemaLocation" . _Just . _URI
             pure Include{..}
           _ -> Nothing
+        withNamespace ns el
   
 class AsImport s where
-  _Import :: Prism' s Import
+  _Import :: Prism' s (Namespaced Import)
   
 instance AsImport XML.Element where
   _Import = prism' ie ei
     where
-      ie :: Import -> XML.Element
+      ie :: Namespaced Import -> XML.Element
       ie = toElement
         ToElement
         { teName = const "import"
@@ -1238,15 +1375,18 @@ instance AsImport XML.Element where
         , teContents = []
         }
 
-      ei :: XML.Element -> Maybe Import
-      ei XML.Element{..} =
-        case XML.nameLocalName elementName of
+      ei :: XML.Element -> Maybe (Namespaced Import)
+      ei XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "import" ->
             let
+              reservedKeys = ["id", "schemaLocation", "namespace"]
               _impID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _impAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs reservedKeys elementAttributes
               _impSchemaLocation =
                 elementAttributes ^? at "schemaLocation" . _Just . _URI
               _impNamespace =
@@ -1254,28 +1394,29 @@ instance AsImport XML.Element where
             in
             Just Import{..}
           _ -> Nothing
+        withNamespace ns el
 
-_RedefineContent :: Prism' XML.Element RedefineContent
+_RedefineContent :: Prism' XML.Element (Namespaced RedefineContent)
 _RedefineContent =
   prism'
   (\case
-      RCSimpleType s -> review _SimpleType s
-      RCComplexType c -> review _ComplexType c
-      RCGroup g -> review _Group g
-      RCAttributeGroup a -> review _AttributeGroup a)
+      (ns, RCSimpleType s) -> review _SimpleType (ns, s)
+      (ns, RCComplexType c) -> review _ComplexType (ns, c)
+      (ns, RCGroup g) -> review _Group (ns, g)
+      (ns, RCAttributeGroup a) -> review _AttributeGroup (ns, a))
   (\e ->
-     (RCSimpleType <$> preview _SimpleType e) <|>
-     (RCComplexType <$> preview _ComplexType e) <|>
-     (RCGroup <$> preview _Group e) <|>
-     (RCAttributeGroup <$> preview _AttributeGroup e))
+     (second RCSimpleType <$> preview _SimpleType e) <|>
+     (second RCComplexType <$> preview _ComplexType e) <|>
+     (second RCGroup <$> preview _Group e) <|>
+     (second RCAttributeGroup <$> preview _AttributeGroup e))
   
 class AsRedefine s where
-  _Redefine :: Prism' s Redefine
+  _Redefine :: Prism' s (Namespaced Redefine)
 
 instance AsRedefine XML.Element where
   _Redefine = prism' rte etr
     where
-      rte :: Redefine -> XML.Element
+      rte :: Namespaced Redefine -> XML.Element
       rte = toElement
         ToElement
         { teName = const "redefine"
@@ -1284,26 +1425,29 @@ instance AsRedefine XML.Element where
           , Just ([qn|schemaLocation|], review _URI _redSchemaLocation)
           ]
         , teContents =
-          [ Fold $ redContent . folded . re _RedefineContent ]
+          [ TEContent (Fold $ redContent . folded) (Fold $ re _RedefineContent) ]
         }
 
-      etr :: XML.Element -> Maybe Redefine
-      etr XML.Element{..} =
-        case XML.nameLocalName elementName of
+      etr :: XML.Element -> Maybe (Namespaced Redefine)
+      etr XML.Element{..} = do
+        let
+          ns = elementName ^. XML._nameNamespace
+        el <- case XML.nameLocalName elementName of
           "redefine" -> do
             let
               _redID =
                 elementAttributes ^? at "id" . _Just . _NCName
               _redAttrs =
-                emptyAttrs & attrs .~ M.mapKeys nameToQName elementAttributes
+                createAttrs ["id", "schemaLocation"] elementAttributes
               _redContent =
                 elementNodes ^..
                 folded .
                 XML._Element .
-                _RedefineContent
+                _RedefineContent . _2
                 
             _redSchemaLocation <-
               elementAttributes ^? at "schemaLocation" . _Just . _URI
 
             pure Redefine{..}
           _ -> Nothing
+        withNamespace ns el

@@ -35,6 +35,7 @@ library
                       , network-uri
                       , parsers
                       , pretty
+                      , profunctors
                       , regex
                       , text 
                       , template-haskell >= 2.11

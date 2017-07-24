@@ -1,13 +1,11 @@
-{-# language ExistentialQuantification #-}
-{-# language FlexibleContexts #-}
-{-# language GeneralizedNewtypeDeriving #-}
-{-# language LambdaCase #-}
-{-# language MultiParamTypeClasses #-}
-{-# language RankNTypes #-}
-{-# language TemplateHaskell #-}
-{-# language OverloadedStrings #-}
-{-# language RecordWildCards #-}
-{-# language QuasiQuotes #-}
+{-#
+language
+
+ExistentialQuantification, FlexibleContexts, GeneralizedNewtypeDeriving,
+LambdaCase, MultiParamTypeClasses, RankNTypes, TemplateHaskell,
+OverloadedStrings, RecordWildCards, QuasiQuotes, TypeSynonymInstances,
+FlexibleInstances
+#-}
 module Text.XML.XSD.Internal.Types where
 
 import Prelude
@@ -36,6 +34,14 @@ import Text.XML.XSD.Types.Regex
 import Text.XML.XSD.Types.Time
 import Text.XML.XSD.Types.Token
 import Text.XML.XSD.Types.URI
+
+type Namespaced a = (Maybe NCName, a)
+
+withNamespace :: Maybe Text -> a -> Maybe (Namespaced a)
+withNamespace Nothing a = pure (Nothing, a)
+withNamespace (Just ns) a = do
+  ns' <- ns ^? _NCName
+  pure (Just ns', a)
 
 -- | XSD primitive datatypes
 data PrimitiveType
@@ -394,21 +400,6 @@ data Element
   }
   deriving (Eq, Show)
 
-mkElement :: NCName -> Element
-mkElement name
-  = Element
-  { _elID = Nothing
-  , _elAbstract = Nothing
-  , _elForm = Nothing
-  , _elMaxOccurs = Nothing
-  , _elMinOccurs = Nothing
-  , _elName = Just name
-  , _elNillable = Nothing
-  , _elTypeName = Nothing
-  , _elTypeElement = Nothing
-  , _elAttrs = emptyAttrs
-  }
-
 -- | Permitted values of when 'namespace' attribute is a list
 data Locality = TargetNamespace | Local
   deriving (Eq, Show)
@@ -587,6 +578,10 @@ data ComplexRestriction
   deriving (Eq, Show)
 
 makeClassy ''Element
+
+instance HasElement (Namespaced Element) where
+  element = _2 . element
+
 makeLenses ''SimpleType
 makeLenses ''SimpleRestriction
 makeLenses ''SimpleExtension

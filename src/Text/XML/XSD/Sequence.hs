@@ -14,9 +14,10 @@ import Text.XML.Attrs
 import Text.XML.XSD.Internal.Lenses
 import Text.XML.XSD.Internal.Types
 
-mkSequence :: [SequenceContent] -> Sequence
+mkSequence :: [SequenceContent] -> Namespaced Sequence
 mkSequence content
-  = Sequence
+  = (,) Nothing
+  Sequence
   { _sequenceID = Nothing
   , _sequenceMaxOccurs = Nothing
   , _sequenceMinOccurs = Nothing

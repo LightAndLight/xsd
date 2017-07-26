@@ -1,6 +1,6 @@
 { mkDerivation, attoparsec, base, base64-bytestring, bytestring
 , case-insensitive, containers, directory, doctest, filepath, lens
-, network-uri, parsers, pretty, profunctors, QuickCheck
+, mtl, network-uri, parsers, pretty, profunctors, QuickCheck
 , quickcheck-instances, regex, stdenv, template-haskell, text, time
 , xml-conduit, xml-lens
 }:
@@ -10,7 +10,7 @@ mkDerivation {
   src = ./.;
   libraryHaskellDepends = [
     attoparsec base base64-bytestring bytestring case-insensitive
-    containers lens network-uri parsers pretty profunctors regex
+    containers lens mtl network-uri parsers pretty profunctors regex
     template-haskell text time xml-conduit xml-lens
   ];
   testHaskellDepends = [

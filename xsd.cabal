@@ -32,6 +32,7 @@ library
                       , case-insensitive
                       , containers
                       , lens
+                      , mtl
                       , network-uri
                       , parsers
                       , pretty

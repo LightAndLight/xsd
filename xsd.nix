@@ -1,20 +1,22 @@
 { mkDerivation, attoparsec, base, base64-bytestring, bytestring
-, case-insensitive, containers, directory, doctest, filepath, lens
-, network-uri, parsers, pretty, profunctors, QuickCheck
+, case-insensitive, containers, directory, filepath, lens
+, mtl, network-uri, parsers, pretty, profunctors, QuickCheck
 , quickcheck-instances, regex, stdenv, template-haskell, text, time
 , xml-conduit, xml-lens
 }:
+let xml-conduit-decode = import ./xml-conduit-decode.nix { };
+in
 mkDerivation {
   pname = "xsd";
   version = "0.5.0.1";
   src = ./.;
   libraryHaskellDepends = [
     attoparsec base base64-bytestring bytestring case-insensitive
-    containers lens network-uri parsers pretty profunctors regex
-    template-haskell text time xml-conduit xml-lens
+    containers lens mtl network-uri parsers pretty profunctors regex
+    template-haskell text time xml-conduit xml-lens xml-conduit-decode
   ];
   testHaskellDepends = [
-    base directory doctest filepath QuickCheck quickcheck-instances
+    base directory filepath QuickCheck quickcheck-instances
     template-haskell
   ];
   homepage = "https://github.com/data61/xsd";

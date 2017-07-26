@@ -32,6 +32,7 @@ library
                       , case-insensitive
                       , containers
                       , lens
+                      , mtl
                       , network-uri
                       , parsers
                       , pretty
@@ -95,14 +96,13 @@ test-suite doctests
                       exitcode-stdio-1.0
 
   main-is:
-                      doctests.hs
+                      Main.hs
 
   default-language:
                       Haskell2010
 
   build-depends:
                       base < 5 && >= 3
-                      , doctest >= 0.9.7
                       , filepath >= 1.3
                       , directory >= 1.1
                       , QuickCheck >= 2.0

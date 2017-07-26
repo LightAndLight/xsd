@@ -163,13 +163,15 @@ data ConstraintFacet
     , _cfAttrs :: Attrs
     }
   deriving (Eq, Show)
-    
+
+{-
   -- | 'maxInclusive' element https://www.w3.org/TR/xmlschema-2/#element-maxInclusive
   -- | 'minInclusive' element https://www.w3.org/TR/xmlschema-2/#element-minInclusive
   -- | 'maxExclusive' element https://www.w3.org/TR/xmlschema-2/#element-maxInclusive
   -- | 'minExclusive' element https://www.w3.org/TR/xmlschema-2/#element-minInclusive
   -- | 'totalDigits' element https://www.w3.org/TR/xmlschema-2/#element-totalDigits
   -- | 'fractionDigits' element https://www.w3.org/TR/xmlschema-2/#element-fractionDigits
+-}
 
 cfAttrs :: Lens' ConstraintFacet Attrs
 cfAttrs = lens _cfAttrs (\s a -> s { _cfAttrs = a })

@@ -12,7 +12,7 @@ module Text.XML.XSD.Schema
   , SchemaPrelude(..)
   , SchemaElement(..)
   , _SchemaElement
-  -- ^ Lenses
+  -- * Lenses
   , schemaID
   , schemaAttributeFormDefault
   , schemaBlockDefault

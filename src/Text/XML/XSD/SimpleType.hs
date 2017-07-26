@@ -6,7 +6,7 @@ module Text.XML.XSD.SimpleType
   , STContent(..)
   , STFinal(..)
   , STFFinal(..)
-  -- ^ Lenses
+  -- * Lenses
   , stID
   , stName
   , stFinal

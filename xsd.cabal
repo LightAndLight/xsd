@@ -57,6 +57,7 @@ library
                       Text.XML.XSD.Internal.Lenses
                       Text.XML.XSD.Internal.Types
                       Text.XML.XSD.Types.Numbers.Sign
+                      Text.XML.XSD.Validate.Monad
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.XSD
@@ -90,6 +91,9 @@ library
                       Text.XML.XSD.Types.Regex
                       Text.XML.XSD.Types.Time
                       Text.XML.XSD.Types.Token
+                      Text.XML.XSD.Validate
+                      Text.XML.XSD.Validate.Builtins
+                      Text.XML.XSD.Validate.SimpleType
 
 test-suite doctests
   type:

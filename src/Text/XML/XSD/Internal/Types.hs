@@ -248,7 +248,6 @@ stcAttrs = lens _stcAttrs (\s a -> s { _stcAttrs = a})
 instance HasAttrs STContent where
   attrs = stcAttrs . attrs
 
-
 -- | 'simpleType' element https://www.w3.org/TR/xmlschema-1/#element-simpleType
 data SimpleType
   = SimpleType

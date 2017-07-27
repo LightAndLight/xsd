@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.XSD.SimpleType
+module Text.XML.XSD.XMLRep.SimpleType
   ( SimpleType(..)
   , AsSimpleType(..)
   , STContent(..)

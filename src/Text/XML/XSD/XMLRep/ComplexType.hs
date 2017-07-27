@@ -1,6 +1,6 @@
-{-# language LambdaCase #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Text.XML.XSD.ComplexType
+module Text.XML.XSD.XMLRep.ComplexType
   ( mkComplexType
   , AsComplexType(..)
   , ComplexType(..)
@@ -13,7 +13,7 @@ module Text.XML.XSD.ComplexType
   )
   where
 
-import Prelude (Maybe(..))
+import Prelude (Maybe (..))
 
 import Text.XML.Attrs
 import Text.XML.XSD.Internal.Lenses

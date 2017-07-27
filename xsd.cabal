@@ -53,26 +53,18 @@ library
                       src
 
   other-modules:
+                      Text.XML.XSD.Component.Internal
                       Text.XML.XSD.Internal.Lenses
                       Text.XML.XSD.Internal.Types
                       Text.XML.XSD.Types.Numbers.Sign
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.XSD
-                      Text.XML.XSD.Attribute
-                      Text.XML.XSD.AttributeGroup
                       Text.XML.XSD.Block
-                      Text.XML.XSD.ComplexType
-                      Text.XML.XSD.Element
                       Text.XML.XSD.Final
                       Text.XML.XSD.Form
-                      Text.XML.XSD.Group
                       Text.XML.XSD.Namespace
-                      Text.XML.XSD.Notation
                       Text.XML.XSD.ProcessContents
-                      Text.XML.XSD.Schema
-                      Text.XML.XSD.Sequence
-                      Text.XML.XSD.SimpleType
                       Text.XML.XSD.Types.Base64Binary
                       Text.XML.XSD.Types.Boolean
                       Text.XML.XSD.Types.Date
@@ -85,10 +77,30 @@ library
                       Text.XML.XSD.Types.Language
                       Text.XML.XSD.Types.NCName
                       Text.XML.XSD.Types.NonNegative
+                      Text.XML.XSD.Types.Positive
                       Text.XML.XSD.Types.QName
                       Text.XML.XSD.Types.Regex
                       Text.XML.XSD.Types.Time
                       Text.XML.XSD.Types.Token
+                      Text.XML.XSD.XMLRep.Attribute
+                      Text.XML.XSD.XMLRep.AttributeGroup
+                      Text.XML.XSD.XMLRep.ComplexType
+                      Text.XML.XSD.XMLRep.Element
+                      Text.XML.XSD.XMLRep.Group
+                      Text.XML.XSD.XMLRep.Notation
+                      Text.XML.XSD.XMLRep.Schema
+                      Text.XML.XSD.XMLRep.Sequence
+                      Text.XML.XSD.XMLRep.SimpleType
+                      Text.XML.XSD.Component.Attribute
+                      Text.XML.XSD.Component.AttributeGroup
+                      Text.XML.XSD.Component.ComplexType
+                      Text.XML.XSD.Component.ConstrainingFacet
+                      Text.XML.XSD.Component.Element
+                      Text.XML.XSD.Component.FundamentalFacet
+                      Text.XML.XSD.Component.IdentityConstraint
+                      Text.XML.XSD.Component.Notation
+                      Text.XML.XSD.Component.Schema
+                      Text.XML.XSD.Component.SimpleType
 
 test-suite doctests
   type:

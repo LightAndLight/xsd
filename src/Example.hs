@@ -13,10 +13,10 @@ import Text.XML.Attrs
 import Text.XML.XSD.Types.NCName
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.URI
-import Text.XML.XSD.ComplexType
-import Text.XML.XSD.Element
-import Text.XML.XSD.Schema
-import Text.XML.XSD.Sequence
+import Text.XML.XSD.XMLRep.ComplexType
+import Text.XML.XSD.XMLRep.Element
+import Text.XML.XSD.XMLRep.Schema
+import Text.XML.XSD.XMLRep.Sequence
 
 test =
   schema

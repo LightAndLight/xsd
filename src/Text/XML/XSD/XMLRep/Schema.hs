@@ -5,7 +5,7 @@ LambdaCase, MultiParamTypeClasses, OverloadedStrings, TemplateHaskell,
 RecordWildCards, QuasiQuotes, TypeSynonymInstances, FlexibleInstances
 #-}
 
-module Text.XML.XSD.Schema
+module Text.XML.XSD.XMLRep.Schema
   ( schema
   , Schema(..)
   , _Schema

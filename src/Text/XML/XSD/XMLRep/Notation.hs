@@ -1,6 +1,6 @@
-module Text.XML.XSD.Attribute
-  ( AsAttribute(..)
-  , Attribute(..)
+module Text.XML.XSD.XMLRep.Notation
+  ( AsNotation(..)
+  , Notation(..)
   )
   where
 

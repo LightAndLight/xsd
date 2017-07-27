@@ -1,5 +1,5 @@
 {-# language TemplateHaskell #-}
-module Text.XML.XSD.Element
+module Text.XML.XSD.XMLRep.Element
   ( Element(..)
   , HasElement(..)
   , AsElement(..)

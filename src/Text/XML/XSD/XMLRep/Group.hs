@@ -1,4 +1,4 @@
-module Text.XML.XSD.Group
+module Text.XML.XSD.XMLRep.Group
   ( AsGroup(..)
   , Group(..)
   , GroupContent(..)

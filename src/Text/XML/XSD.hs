@@ -4,7 +4,7 @@ module Text.XML.XSD where
 
 import Prelude
 import Text.XML.Lens as XML
-import qualified Text.XML.XSD.Schema as XSD
+import qualified Text.XML.XSD.XMLRep.Schema as XSD
 
 documentToXSD :: XML.Document -> Maybe XSD.Schema
 documentToXSD document =

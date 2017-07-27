@@ -1,6 +1,6 @@
 {-# language LambdaCase #-}
 
-module Text.XML.XSD.Sequence
+module Text.XML.XSD.XMLRep.Sequence
   ( mkSequence
   , AsSequence(..)
   , Sequence(..)

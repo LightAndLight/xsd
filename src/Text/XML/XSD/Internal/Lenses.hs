@@ -78,10 +78,10 @@ toElement ToElement{..} (ns, a) =
       teContents
   }
 
-_ConstraintFacet :: Prism' XML.Element (Namespaced ConstraintFacet)
-_ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
+_ConstrainingFacet :: Prism' XML.Element (Namespaced ConstrainingFacet)
+_ConstrainingFacet = prism' constraintFacetToElement elementToConstrainingFacet
   where
-    constraintFacetToElement :: (Maybe NCName, ConstraintFacet) -> XML.Element
+    constraintFacetToElement :: (Maybe NCName, ConstrainingFacet) -> XML.Element
     constraintFacetToElement =
       toElement 
         ToElement
@@ -111,7 +111,7 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
                 [ Just ([qn|value|], _Regex # _cfPatternValue)
                 ]
               CFEnumeration{..} ->
-                [ Just ([qn|value|], _QName # _cfEnumerationValue)
+                [ Just ([qn|value|], _cfEnumerationValue)
                 ]
               CFWhiteSpace{..} ->
                 [ Just ([qn|value|], _WhiteSpace # _cfWhiteSpaceValue)
@@ -120,8 +120,8 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
         , teContents = []
         }
 
-    elementToConstraintFacet :: XML.Element -> Maybe (Maybe NCName, ConstraintFacet)
-    elementToConstraintFacet XML.Element{..} = do
+    elementToConstrainingFacet :: XML.Element -> Maybe (Maybe NCName, ConstrainingFacet)
+    elementToConstrainingFacet XML.Element{..} = do
       let
         reservedKeys = ["id", "fixed", "value"]
         i = elementAttributes ^? at "id" . _Just . _NCName
@@ -146,7 +146,7 @@ _ConstraintFacet = prism' constraintFacetToElement elementToConstraintFacet
           in CFPattern i <$> v <*> pure att
 
         "enumeration" ->
-          let v = elementAttributes ^? at "value" . _Just . _QName
+          let v = elementAttributes ^? at "value" . _Just
           in CFEnumeration i <$> v <*> pure att
 
         "whiteSpace" -> 
@@ -169,7 +169,7 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
               , teAttrs = elementAttrs
               , teContents = 
                   [ TEContent (Fold $ to _strsTypeElement . _Just) (Fold $ re _SimpleType)
-                  , TEContent (Fold $ to _strsConstraints . folded) (Fold $ re _ConstraintFacet)
+                  , TEContent (Fold $ to _strsConstraints . folded) (Fold $ re _ConstrainingFacet)
                   ]
               }
             STList{} ->
@@ -225,7 +225,7 @@ _SimpleTypeContent = prism' stContentToElement elementToStContent
               elementNodes ^..
               folded .
               XML._Element .
-              _ConstraintFacet . _2
+              _ConstrainingFacet . _2
           in
           Just $ STRestriction i att b (st ^? _head) cfs
 
@@ -378,7 +378,7 @@ _SimpleRestriction = prism' srToElement elementToSr
         [ (,) [qn|base|] . review _QName <$> _srsBase ]
       , teContents =
         [ TEContent (Fold $ srsType . _Just) (Fold $ re _SimpleType)
-        , TEContent (Fold $ srsConstraints . folded) (Fold $ re _ConstraintFacet)
+        , TEContent (Fold $ srsConstraints . folded) (Fold $ re _ConstrainingFacet)
         , TEContent
           (Fold $ srsAttributeSpec . folded)
           (Fold $ re prodDist . re (without _Attribute _SimpleAttributeGroup) . bothEither)
@@ -399,7 +399,7 @@ _SimpleRestriction = prism' srToElement elementToSr
             _srsAttrs = createAttrs reservedKeys elementAttributes
             _srsType = elementNodes ^? folded . XML._Element . _SimpleType . _2
             _srsConstraints =
-              elementNodes ^.. folded . XML._Element . _ConstraintFacet . _2
+              elementNodes ^.. folded . XML._Element . _ConstrainingFacet . _2
             _srsAttributeSpec =
               elementNodes ^..
               folded .

@@ -18,20 +18,11 @@ import qualified Data.Text as T
 
 import Text.XML.Attrs
 import Text.XML.XSD.Form
-import Text.XML.XSD.Types.Base64Binary
-import Text.XML.XSD.Types.Boolean
-import Text.XML.XSD.Types.Date
-import Text.XML.XSD.Types.DateTime
-import Text.XML.XSD.Types.Decimal
-import Text.XML.XSD.Types.Double
-import Text.XML.XSD.Types.Float
-import Text.XML.XSD.Types.HexBinary
 import Text.XML.XSD.Types.ID
 import Text.XML.XSD.Types.NCName
 import Text.XML.XSD.Types.NonNegative
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.Regex
-import Text.XML.XSD.Types.Time
 import Text.XML.XSD.Types.Token
 import Text.XML.XSD.Types.URI
 
@@ -42,65 +33,6 @@ withNamespace Nothing a = pure (Nothing, a)
 withNamespace (Just ns) a = do
   ns' <- ns ^? _NCName
   pure (Just ns', a)
-
--- | XSD primitive datatypes
-data PrimitiveType
-  = PString
-  | PBoolean
-  | PDecimal
-  | PFloat
-  | PDouble
-  | PDateTime
-  | PTime
-  | PDate
-  | PHexBinary
-  | PBase64Binary
-  | PAnyURI
-  | PQName
-  deriving (Eq, Show)
-  {-
-  | PNOTATION
-  | PGYearMonth
-  | PGYear
-  | PGMonthDay
-  | PGDay
-  | PGMonth
-  -}
-
--- | Some text and its associated XSD type
-data AnySimpleType
-  = AnySimpleType
-  { _astValue :: Text
-  , _astType :: PrimitiveType
-  }
-  deriving (Eq, Show)
-
-_AnySimpleType :: Prism' (Text, PrimitiveType) AnySimpleType
-_AnySimpleType = prism' (\(AnySimpleType a b) -> (a, b)) $
-  \(txt, ty) ->
-    let
-      test = case ty of
-        PString -> const True
-        PBoolean -> isBoolean 
-        PDecimal -> isDecimal
-        PFloat -> isFloat
-        PDouble -> isDouble
-        PDateTime -> isDateTime
-        PTime -> isTime
-        PDate -> isDate
-        PHexBinary -> isHexBinary
-        PBase64Binary -> isBase64Binary
-        PAnyURI -> isURI
-        PQName -> isQName
-        {-
-        PGYearMonth -> _
-        PGYear -> _
-        PGMonthDay -> _
-        PGDay -> _
-        PGMonth -> _
-        PNOTATION -> _
-        -}
-     in if test txt then Just (AnySimpleType txt ty) else Nothing
 
 -- | Permitted 'whiteSpace' 'value's
 data WhiteSpaceSetting = Collapse | Replace | Preserve
@@ -116,7 +48,7 @@ _WhiteSpace =
         "preservce" -> Just Preserve
         _ -> Nothing)
 
-data ConstraintFacet
+data ConstrainingFacet
   -- | 'length' element https://www.w3.org/TR/xmlschema-2/#element-length
   = CFLength
     { _cfID :: Maybe NCName
@@ -151,7 +83,7 @@ data ConstraintFacet
   -- | 'enumeration' element https://www.w3.org/TR/xmlschema-2/#element-enumeration
   | CFEnumeration
     { _cfID :: Maybe NCName
-    , _cfEnumerationValue :: QName
+    , _cfEnumerationValue :: Text
     , _cfAttrs :: Attrs
     }
     
@@ -171,10 +103,10 @@ data ConstraintFacet
   -- | 'totalDigits' element https://www.w3.org/TR/xmlschema-2/#element-totalDigits
   -- | 'fractionDigits' element https://www.w3.org/TR/xmlschema-2/#element-fractionDigits
 
-cfAttrs :: Lens' ConstraintFacet Attrs
+cfAttrs :: Lens' ConstrainingFacet Attrs
 cfAttrs = lens _cfAttrs (\s a -> s { _cfAttrs = a })
 
-instance HasAttrs ConstraintFacet where
+instance HasAttrs ConstrainingFacet where
   attrs = cfAttrs . attrs
 
 -- | 'include' element https://www.w3.org/TR/xmlschema-1/#element-include
@@ -214,7 +146,7 @@ data STContent
   , _stcAttrs :: Attrs
   , _strsBase :: Maybe QName
   , _strsTypeElement :: Maybe SimpleType
-  , _strsConstraints :: [ConstraintFacet]
+  , _strsConstraints :: [ConstrainingFacet]
   }
   
   -- | Containing a 'list' element
@@ -439,7 +371,7 @@ data SimpleRestriction
   , _srsID :: Maybe NCName
   , _srsAttrs :: Attrs
   , _srsType :: Maybe SimpleType
-  , _srsConstraints :: [ConstraintFacet]
+  , _srsConstraints :: [ConstrainingFacet]
   , _srsAttributeSpec :: [Either Attribute SimpleAttributeGroup]
   , _srsAnyAttribute :: Maybe AnyAttribute
   }

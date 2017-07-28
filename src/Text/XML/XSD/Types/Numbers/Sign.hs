@@ -3,6 +3,8 @@
 
 module Text.XML.XSD.Types.Numbers.Sign where
 
+import Prelude (Eq, Show)
+
 import Control.Applicative ((<|>), pure)
 import Data.Functor (($>))
 import Data.Text (Text)
@@ -10,7 +12,7 @@ import Language.Haskell.TH.Syntax
 import Text.Parser.Char
 import Text.Parser.Combinators
 
-data Sign = Pos | Neg deriving Lift
+data Sign = Pos | Neg deriving (Eq, Lift, Show)
 
 showSign :: Sign -> Text
 showSign a =

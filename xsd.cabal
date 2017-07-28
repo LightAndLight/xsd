@@ -31,6 +31,7 @@ library
                       , base64-bytestring
                       , case-insensitive
                       , containers
+                      , mtl
                       , lens
                       , network-uri
                       , parsers
@@ -57,6 +58,7 @@ library
                       Text.XML.XSD.Internal.Lenses
                       Text.XML.XSD.Internal.Types
                       Text.XML.XSD.Types.Numbers.Sign
+
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.XSD
@@ -71,6 +73,7 @@ library
                       Text.XML.XSD.Types.DateTime
                       Text.XML.XSD.Types.Decimal
                       Text.XML.XSD.Types.Double
+                      Text.XML.XSD.Types.Duration
                       Text.XML.XSD.Types.Float
                       Text.XML.XSD.Types.HexBinary
                       Text.XML.XSD.Types.ID
@@ -85,18 +88,21 @@ library
                       Text.XML.XSD.XMLRep.Attribute
                       Text.XML.XSD.XMLRep.AttributeGroup
                       Text.XML.XSD.XMLRep.ComplexType
+                      Text.XML.XSD.XMLRep.ConstrainingFacet
                       Text.XML.XSD.XMLRep.Element
                       Text.XML.XSD.XMLRep.Group
                       Text.XML.XSD.XMLRep.Notation
                       Text.XML.XSD.XMLRep.Schema
                       Text.XML.XSD.XMLRep.Sequence
                       Text.XML.XSD.XMLRep.SimpleType
+                      Text.XML.XSD.Component
                       Text.XML.XSD.Component.Attribute
                       Text.XML.XSD.Component.AttributeGroup
+                      Text.XML.XSD.Component.Builtins
                       Text.XML.XSD.Component.ComplexType
                       Text.XML.XSD.Component.ConstrainingFacet
                       Text.XML.XSD.Component.Element
-                      Text.XML.XSD.Component.FundamentalFacet
+                      Text.XML.XSD.Component.FundamentalFacets
                       Text.XML.XSD.Component.IdentityConstraint
                       Text.XML.XSD.Component.Notation
                       Text.XML.XSD.Component.Schema

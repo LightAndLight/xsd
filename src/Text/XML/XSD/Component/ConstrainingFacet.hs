@@ -39,7 +39,7 @@ data ConstrainingFacet
   
   | CFWhiteSpace
   { _cfWhiteSpaceValue :: WhiteSpace
-  , _cfWhiteSpaceFixed :: WhiteSpace
+  , _cfWhiteSpaceFixed :: Bool
   }
   
   | CFMaxInclusive

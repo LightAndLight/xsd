@@ -59,7 +59,7 @@ nc =
       case mkNCName (T.pack str) of
         Just n -> [| n |]
         Nothing -> fail $ str <> " is not a valid NCName"
-  , quotePat = error "`nc` cannot be used as a pattern"
+  , quotePat = error "`nc` cannot be used as a type"
   , quoteType = error "`nc` cannot be used as a type"
   , quoteDec = error "`nc` cannot be used as a declaration"
   }

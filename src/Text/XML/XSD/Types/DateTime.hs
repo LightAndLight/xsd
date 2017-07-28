@@ -1,4 +1,8 @@
-{-# language DeriveLift, RecordWildCards, OverloadedStrings, TemplateHaskell #-}
+{-#
+language
+
+DeriveLift, RecordWildCards, OverloadedStrings, TemplateHaskell
+#-}
 
 module Text.XML.XSD.Types.DateTime
   ( DateTime

@@ -1,6 +1,6 @@
 module Text.XML.XSD.Component.ConstrainingFacet where
 
-import Prelude (Bool)
+import Prelude (Bool, Eq, Show)
 
 import Data.Text (Text)
 
@@ -12,6 +12,7 @@ data WhiteSpace
   = WSPreserve
   | WSReplace
   | WSCollapse
+  deriving (Eq, Show)
 
 data ConstrainingFacet
   = CFLength
@@ -71,3 +72,4 @@ data ConstrainingFacet
   { _cfFractionDigitsValue :: NonNegative
   , _cfFractionDigitsFixed :: Bool
   }
+  deriving (Eq, Show)

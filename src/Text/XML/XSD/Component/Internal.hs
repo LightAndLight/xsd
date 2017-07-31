@@ -16,10 +16,12 @@ import Text.XML.XSD.Types.URI
 data AttScope
   = ASGlobal
   | ASType ComplexType
+  deriving (Eq, Show)
 
 data AttValueConstraint
   = AVDefault
   | AVFixed
+  deriving (Eq, Show)
 
 data Attribute
   = Attribute
@@ -29,24 +31,29 @@ data Attribute
   , _attScope :: Maybe AttScope
   , _attValueConstraint :: Maybe (Text, AttValueConstraint)
   }
+  deriving (Eq, Show)
   
 data CTDerivation
   = CTDExtension
   | CTDRestriction
+  deriving (Eq, Show)
   
 data CTFinal
   = CTFExtension
   | CTFRestriction
+  deriving (Eq, Show)
   
 data CTProhibitedSubs
   = CTPExtension
   | CTPRestriction
+  deriving (Eq, Show)
   
 data CTContentType
   = CTCEmpty
   | CTCSimpleType SimpleType
   | CTCContentModelMixed Particle
   | CTCContentModelElementOnly Particle
+  deriving (Eq, Show)
 
 data ComplexType
   = ComplexType
@@ -60,16 +67,18 @@ data ComplexType
   , _ctAttrWildcard :: Maybe Wildcard
   , _ctContentType :: CTContentType
   , _ctProhibitedSubs :: [CTProhibitedSubs]
-  }
+  } deriving (Eq, Show)
   
 data ParticleMaxOccurs
   = PMUnbounded
   | PMBounded NonNegative
+  deriving (Eq, Show)
 
 data ParticleTerm
   = PTModelGroup ModelGroup
   | PTWildcard Wildcard
   | PTElement Element
+  deriving (Eq, Show)
 
 data Particle
   = Particle
@@ -77,23 +86,28 @@ data Particle
   , _paMaxOccurs :: ParticleMaxOccurs
   , _paTerm :: ParticleTerm
   }
+  deriving (Eq, Show)
   
 data ElScope
   = ESGlobal
   | ESType ComplexType
+  deriving (Eq, Show)
   
 data ElValueConstraint
   = EVDefault
   | EVFixed
+  deriving (Eq, Show)
 
 data ElSubsGroupExcl
   = ESGExtension
   | ESGRestriction
+  deriving (Eq, Show)
 
 data ElDisallowedSubs
   = EDSubstitution
   | EDExtension
   | EDRestriction
+  deriving (Eq, Show)
 
 data Element
   = Element
@@ -109,11 +123,13 @@ data Element
   , _elDisallowedSubs :: ElDisallowedSubs
   , _elAbstract :: Bool
   }
+  deriving (Eq, Show)
   
 data MGCompositor
   = MGCSequence
   | MGCChoice
   | MGAll
+  deriving (Eq, Show)
   
 data ModelGroup
   = ModelGroup
@@ -122,11 +138,13 @@ data ModelGroup
   , _mgCompositor :: MGCompositor
   , _mgParticles :: [Particle]
   }
+  deriving (Eq, Show)
 
 data ICCategory
   = ICKey
   | ICKeyRef IdentityConstraint
   | ICUnique
+  deriving (Eq, Show)
 
 data IdentityConstraint
   = IdentityConstraint
@@ -136,22 +154,26 @@ data IdentityConstraint
   , _icSelector :: Text
   , _icFields :: NonEmpty Text
   }
+  deriving (Eq, Show)
 
 data WCNamespaceConstraint
   = WCNCAny
   | WCNCNot (Maybe URI)
   | WCNCMultiple [Maybe URI]
+  deriving (Eq, Show)
 
 data WCProcessContents
   = WCPCSkip
   | WCPCLax
   | WCPCStrict
+  deriving (Eq, Show)
 
 data Wildcard
   = Wildcard
   { _wcNamespaceConstraint :: WCNamespaceConstraint
   , _wcProcessContents :: WCProcessContents
   }
+  deriving (Eq, Show)
 
 data AttributeGroup
   = AttributeGroup
@@ -160,6 +182,7 @@ data AttributeGroup
   , _agAttrUses :: [Attribute]
   , _agAttrWildcard :: Maybe Wildcard
   }
+  deriving (Eq, Show)
   
 data STFinal
   = STFExtension
@@ -172,6 +195,7 @@ data STVariety
   = STVAtomic { _stvaPrimitive :: Either AnySimpleType SimpleType }
   | STVList { _stvlItemType :: SimpleType }
   | STVUnion { _stvuMemberTypes :: NonEmpty SimpleType }
+  deriving (Eq, Show)
 
 data SimpleType
   = SimpleType
@@ -183,6 +207,7 @@ data SimpleType
   , _stFinal :: [STFinal]
   , _stVariety :: STVariety
   }
+  deriving (Eq, Show)
   
 data AnySimpleType
   = AnySimpleType
@@ -190,6 +215,7 @@ data AnySimpleType
   , _astTargetNamespace :: URI
   , _astBaseType :: ComplexType
   }
+  deriving (Eq, Show)
 
 -- | Builtin 'anySimpleType' definition https://www.w3.org/TR/xmlschema-1/#simple-ur-type-itself
 anySimpleType :: AnySimpleType

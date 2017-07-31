@@ -15,14 +15,17 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor
+import Data.Either (rights)
 import Data.Foldable
 import Data.List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map (Map)
 import Data.Maybe (catMaybes, fromMaybe)
+import Data.Set (Set)
 import Data.Text (Text)
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import qualified Text.XML.XSD.XMLRep.ComplexType as XML
 import qualified Text.XML.XSD.XMLRep.ConstrainingFacet as XML
@@ -86,6 +89,7 @@ data ValidationError
   | MissingMemberTypeDefinition XML.SimpleType
   | BadItemTypeVariety XML.SimpleType Comp.STVariety
   | IncorrectType Text PrimitiveType
+  | CyclicSimpleTypeDefinition XML.SimpleType (Set NCName)
 
 makeLenses ''ValidationState
 
@@ -137,9 +141,59 @@ lookupSimpleType
   -> m (Maybe Comp.SimpleType)
 lookupSimpleType a = uses simpleTypes $ \m -> flip M.lookup m =<< a
 
+onSTBaseType
+  :: Monad m
+  => (Comp.SimpleType -> ValidateT m a)
+  -> (Comp.SimpleType -> ValidateT m a)
+  -> ([Comp.SimpleType] -> ValidateT m a)
+  -> XML.SimpleType
+  -> ValidateT m a
+onSTBaseType restriction list union s@XML.SimpleType{..} =
+  case _stContent of
+    XML.STRestriction{..} -> do
+      maybeBase <- lookupSimpleType _strsBase
+      typeElement <- traverse refineSimpleType _strsTypeElement
+      case maybeBase of
+        Nothing ->
+          maybe
+            (throwError $ MissingBaseTypeDefinition s)
+            restriction
+            typeElement
+        Just ty -> restriction ty
+    XML.STList{..} -> do
+      maybeBase <- lookupSimpleType _stlsItemType
+      typeElement <- traverse refineSimpleType _stlsTypeElement
+      case maybeBase of
+        Nothing ->
+          maybe
+            (throwError $ MissingBaseTypeDefinition s)
+            list
+            typeElement
+        Just ty -> restriction ty
+    XML.STUnion{..} -> do
+      maybeBases <- traverse lookupSimpleType $ sequence _stunMemberTypes
+      typeElements <- sequence $ traverse refineSimpleType <$> _stunTypeElements
+      case sequence maybeBases of
+        Nothing ->
+          maybe
+            (throwError $ MissingBaseTypeDefinition s)
+            union
+            typeElements
+        Just tys -> union tys
+
+stAncestors :: Comp.SimpleType -> [Comp.SimpleType]
+stAncestors = go []
+  where
+    go acc st =
+      let
+        base = st ^? Comp.stBaseType . _Right
+        acc' = maybe acc (flip (:) acc) base
+      in maybe acc' (go acc') base
+
 refineSimpleType :: Monad m => XML.SimpleType -> ValidateT m Comp.SimpleType
 refineSimpleType s@XML.SimpleType{..} = do
   targetNamespace <- ask
+  detectCycles s
   baseType <- simpleTypeBaseType _stContent
   facets <- simpleTypeFacets _stContent baseType
   variety <- simpleTypeVariety _stContent baseType
@@ -154,6 +208,31 @@ refineSimpleType s@XML.SimpleType{..} = do
     , _stVariety = variety
     }
   where
+    detectCycles :: Monad m => XML.SimpleType -> ValidateT m ()
+    detectCycles sty =
+      onSTBaseType
+        (\ty -> do
+            let newBase = ty ^. Comp.stBaseType
+            either (const $ pure ()) (loop $ S.fromList (ty ^.. Comp.stName . _Just)) newBase)
+        (\ty -> do
+            let newBase = ty ^. Comp.stBaseType
+            either (const $ pure ()) (loop $ S.fromList (ty ^.. Comp.stName . _Just)) newBase)
+        (\tys -> do
+            let newBases = tys ^.. folded . Comp.stBaseType . _Right
+            traverse_ (loop $ S.fromList (newBases ^.. folded . Comp.stName . _Just)) newBases)
+        sty
+      where
+        loop :: Monad m => Set NCName -> Comp.SimpleType -> ValidateT m ()
+        loop history Comp.SimpleType{..} =
+          case _stBaseType of
+            Left _ -> pure ()
+            Right ty
+              | Just name <- (ty ^? Comp.stName . _Just)
+              , name `S.member` history -> 
+                  throwError $
+                  CyclicSimpleTypeDefinition sty (maybe history (flip S.insert history) (ty ^. Comp.stName))
+              | otherwise -> loop (maybe history (flip S.insert history) (ty ^. Comp.stName)) ty
+              
     simpleTypeBaseType content =
       case content of
         XML.STRestriction{..} -> do

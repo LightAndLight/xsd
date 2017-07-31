@@ -1,3 +1,12 @@
+{-|
+Module: Text.XML.XSD.Types.DateTime
+Description: XSD @dateTime@ type
+
+The @dateTime@ type.
+
+https://www.w3.org/TR/xmlschema-2/#dateTime
+-}
+
 {-#
 language
 

@@ -1,5 +1,15 @@
+{-|
+Module: Text.XML.XSD.Validation.FundamentalFacets
+Description: Fundamental facets
+
+Fundamental facets as described by:
+
+* https://www.w3.org/TR/xmlschema-2/#rf-fund-facets
+* https://www.w3.org/TR/xmlschema-2/#app-fundamental-facets
+-}
+
 {-# language TemplateHaskell #-}
-module Text.XML.XSD.Component.FundamentalFacets where
+module Text.XML.XSD.Validation.FundamentalFacets where
 
 import Prelude (Bool, Eq, Show)
 

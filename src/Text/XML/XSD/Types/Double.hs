@@ -1,10 +1,16 @@
-{-# language DeriveLift #-}
-{-# language OverloadedStrings #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Double
+Description: XSD @double@ type
+
+The @double@ type.
+
+https://www.w3.org/TR/xmlschema-2/#double
+-}
+
+{-# language DeriveLift, OverloadedStrings, TemplateHaskell #-}
 
 module Text.XML.XSD.Types.Double
-  ( Double
-  , isDouble
+  ( isDouble
   , mkDouble
   , parseDouble
   , db

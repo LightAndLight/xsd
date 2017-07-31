@@ -1,10 +1,20 @@
+{-|
+Module: Text.XML.XSD.XMLRep.Final
+Description: XSD @final@ attribute
+
+Prism for the @final@ attribute, used in:
+
+* https://www.w3.org/TR/xmlschema-1/#element-complexType
+* https://www.w3.org/TR/xmlschema-1/#element-element
+* https://www.w3.org/TR/xmlschema-1/#element-simpleType
+-}
+
 {-#
 language
 
 LambdaCase, MultiParamTypeClasses, OverloadedStrings
 #-}
-
-module Text.XML.XSD.Final (AsFinal(..)) where
+module Text.XML.XSD.XMLRep.Fields.Final (AsFinal(..)) where
 
 import Prelude
 
@@ -13,8 +23,9 @@ import Data.Text (Text)
 
 import qualified Data.Text as T
 
-import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.XMLRep.Internal.Types
 
+-- | Prism for @final@-like things
 class AsFinal s a where
   _Final :: Prism' s a
 

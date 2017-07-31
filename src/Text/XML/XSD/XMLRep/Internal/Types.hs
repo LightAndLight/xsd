@@ -6,7 +6,7 @@ LambdaCase, MultiParamTypeClasses, RankNTypes, TemplateHaskell,
 OverloadedStrings, RecordWildCards, QuasiQuotes, TypeSynonymInstances,
 FlexibleInstances
 #-}
-module Text.XML.XSD.Internal.Types where
+module Text.XML.XSD.XMLRep.Internal.Types where
 
 import Prelude
 
@@ -17,10 +17,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XML.Attrs
-import Text.XML.XSD.Form
+import Text.XML.XSD.XMLRep.Fields.Form
+import Text.XML.XSD.XMLRep.Fields.ProcessContents
 import Text.XML.XSD.Types.ID
 import Text.XML.XSD.Types.NCName
-import Text.XML.XSD.Types.NonNegative
+import Text.XML.XSD.Types.NonNegativeInteger
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.Regex
 import Text.XML.XSD.Types.Token
@@ -52,7 +53,7 @@ data ConstrainingFacet
   -- | 'length' element https://www.w3.org/TR/xmlschema-2/#element-length
   = CFLength
     { _cfID :: Maybe NCName
-    , _cfLengthValue :: NonNegative
+    , _cfLengthValue :: NonNegativeInteger
     , _cfLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
@@ -60,7 +61,7 @@ data ConstrainingFacet
   -- | 'minLength' element https://www.w3.org/TR/xmlschema-2/#element-minLength
   | CFMinLength
     { _cfID :: Maybe NCName
-    , _cfMinLengthValue :: NonNegative
+    , _cfMinLengthValue :: NonNegativeInteger
     , _cfMinLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
@@ -68,7 +69,7 @@ data ConstrainingFacet
   -- | 'maxLength' element https://www.w3.org/TR/xmlschema-2/#element-maxLength
   | CFMaxLength
     { _cfID :: Maybe NCName
-    , _cfMaxLengthValue :: NonNegative
+    , _cfMaxLengthValue :: NonNegativeInteger
     , _cfMaxLengthFixed :: Maybe Bool
     , _cfAttrs :: Attrs
     }
@@ -308,7 +309,7 @@ data AttributeGroup
   deriving (Eq, Show)
 
 -- | Upper bound on occurrances of things
-data Occurances = Unbounded | Bounded NonNegative
+data Occurances = Unbounded | Bounded NonNegativeInteger
   deriving (Eq, Show)
 
 -- | 'element' element https://www.w3.org/TR/xmlschema-1/#element-element
@@ -318,7 +319,7 @@ data Element
   , _elAbstract :: Maybe Bool
   , _elForm :: Maybe Form
   , _elMaxOccurs :: Maybe Occurances
-  , _elMinOccurs :: Maybe NonNegative
+  , _elMinOccurs :: Maybe NonNegativeInteger
   , _elName :: Maybe NCName
   , _elNillable :: Maybe Bool
   , _elTypeName :: Maybe QName
@@ -338,10 +339,6 @@ data Locality = TargetNamespace | Local
 
 -- | Permitted values of the 'namespace' attribute
 data Namespace = NSAny | NSOther | NSList [Either URI Locality]
-  deriving (Eq, Show)
-
--- | Permitted values of the 'processContents' attribute
-data ProcessContents = PCLax | PCSkip | PCStrict
   deriving (Eq, Show)
 
 -- | 'anyAttribute' element https://www.w3.org/TR/xmlschema-1/#element-anyAttribute
@@ -412,7 +409,7 @@ data Any
   = Any
   { _anyID :: Maybe NCName
   , _anyMaxOccurs :: Maybe Occurances
-  , _anyMinOccurs :: Maybe NonNegative
+  , _anyMinOccurs :: Maybe NonNegativeInteger
   , _anyNamespace :: Maybe Namespace
   , _anyProcessContents :: Maybe ProcessContents
   , _anyAttrs :: Attrs
@@ -432,7 +429,7 @@ data Choice
   = Choice
   { _choiceID :: Maybe NCName
   , _choiceMaxOccurs :: Maybe Occurances
-  , _choiceMinOccurs :: Maybe NonNegative
+  , _choiceMinOccurs :: Maybe NonNegativeInteger
   , _choiceAttrs :: Attrs
   , _choiceContent :: [ChoiceContent]
   }
@@ -451,7 +448,7 @@ data Sequence
   = Sequence
   { _sequenceID :: Maybe NCName
   , _sequenceMaxOccurs :: Maybe Occurances
-  , _sequenceMinOccurs :: Maybe NonNegative
+  , _sequenceMinOccurs :: Maybe NonNegativeInteger
   , _sequenceAttrs :: Attrs
   , _sequenceContent :: [SequenceContent]
   }
@@ -469,7 +466,7 @@ data Group
   = Group
   { _grID :: Maybe NCName
   , _grMaxOccurs :: Maybe Occurances
-  , _grMinOccurs :: Maybe NonNegative
+  , _grMinOccurs :: Maybe NonNegativeInteger
   , _grName :: Maybe NCName
   , _grRef :: Maybe QName
   , _grAttrs :: Attrs

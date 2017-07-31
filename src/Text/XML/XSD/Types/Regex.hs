@@ -1,3 +1,12 @@
+{-|
+Module: Text.XML.XSD.Types.Regex
+Description: XSD @regex@ type
+
+The @regex@ type.
+
+https://www.w3.org/TR/xmlschema-2/#regex
+-}
+
 module Text.XML.XSD.Types.Regex
   ( Regex
   , isRegex

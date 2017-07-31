@@ -1,5 +1,5 @@
 {-# language TemplateHaskell, QuasiQuotes #-}
-module Text.XML.XSD.Component.Internal where
+module Text.XML.XSD.Validation.Internal where
 
 import Prelude (Bool(..), Maybe(..), Either(..), Eq, Show)
 
@@ -7,10 +7,10 @@ import Control.Lens (makeLenses)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 
-import Text.XML.XSD.Component.ConstrainingFacet
-import Text.XML.XSD.Component.FundamentalFacets
+import Text.XML.XSD.Validation.ConstrainingFacet
+import Text.XML.XSD.Validation.FundamentalFacets
 import Text.XML.XSD.Types.NCName
-import Text.XML.XSD.Types.NonNegative
+import Text.XML.XSD.Types.NonNegativeInteger
 import Text.XML.XSD.Types.URI
 
 data AttScope
@@ -71,7 +71,7 @@ data ComplexType
   
 data ParticleMaxOccurs
   = PMUnbounded
-  | PMBounded NonNegative
+  | PMBounded NonNegativeInteger
   deriving (Eq, Show)
 
 data ParticleTerm
@@ -82,7 +82,7 @@ data ParticleTerm
 
 data Particle
   = Particle
-  { _paMinOccurs :: NonNegative
+  { _paMinOccurs :: NonNegativeInteger
   , _paMaxOccurs :: ParticleMaxOccurs
   , _paTerm :: ParticleTerm
   }

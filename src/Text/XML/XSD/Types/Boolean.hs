@@ -1,3 +1,12 @@
+{-|
+Module: Text.XML.XSD.Types.Boolean
+Description: XSD @boolean@ type
+
+The @boolean@ type.
+
+https://www.w3.org/TR/xmlschema-2/#boolean
+-}
+
 {-# language OverloadedStrings #-}
 module Text.XML.XSD.Types.Boolean
   ( isBoolean

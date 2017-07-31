@@ -1,4 +1,4 @@
-module Text.XML.XSD.Component.Wildcard
+module Text.XML.XSD.Validation.Wildcard
   ( Wildcard(..)
   , WCNamespaceConstraint(..)
   , WCProcessContents(..)
@@ -8,4 +8,4 @@ module Text.XML.XSD.Component.Wildcard
   )
   where
 
-import Text.XML.XSD.Component.Internal
+import Text.XML.XSD.Validation.Internal

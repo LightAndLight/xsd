@@ -1,4 +1,4 @@
-module Text.XML.XSD.Component.Particle
+module Text.XML.XSD.Validation.Particle
   ( ParticleMaxOccurs(..)
   , ParticleTerm(..)
   , Particle(..)
@@ -9,4 +9,4 @@ module Text.XML.XSD.Component.Particle
   )
   where
 
-import Text.XML.XSD.Component.Internal
+import Text.XML.XSD.Validation.Internal

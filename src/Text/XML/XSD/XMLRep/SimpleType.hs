@@ -1,12 +1,20 @@
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.XMLRep.SimpleType
+Description: XSD @simpleType@ element
 
+The XSD @simpleType@ element
+
+https://www.w3.org/TR/xmlschema-1/#element-simpleType
+-}
+
+{-# language TemplateHaskell #-}
 module Text.XML.XSD.XMLRep.SimpleType
   ( SimpleType(..)
-  , AsSimpleType(..)
   , STContent(..)
   , STFinal(..)
   , STFFinal(..)
   -- ^ Lenses
+  , AsSimpleType(..)
   , stID
   , stName
   , stFinal
@@ -14,5 +22,5 @@ module Text.XML.XSD.XMLRep.SimpleType
   )
   where
 
-import Text.XML.XSD.Internal.Lenses
-import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.XMLRep.Internal.Lenses
+import Text.XML.XSD.XMLRep.Internal.Types

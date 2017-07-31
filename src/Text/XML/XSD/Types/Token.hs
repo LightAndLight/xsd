@@ -1,5 +1,13 @@
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Token
+Description: XSD @token@ type
 
+The @token@ type.
+
+https://www.w3.org/TR/xmlschema-2/#token
+-}
+
+{-# language TemplateHaskell #-}
 module Text.XML.XSD.Types.Token
   ( Token
   , isToken

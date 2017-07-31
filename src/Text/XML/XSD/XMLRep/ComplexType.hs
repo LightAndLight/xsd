@@ -1,24 +1,42 @@
-{-# LANGUAGE LambdaCase #-}
+{-|
+Module: Text.XML.XSD.XMLRep.ComplexType
+Description: XSD @complexType@ element
 
+The XSD @complexType@ element
+
+https://www.w3.org/TR/xmlschema-1/#element-complexType
+-}
+
+{-# language LambdaCase #-}
 module Text.XML.XSD.XMLRep.ComplexType
-  ( mkComplexType
+  ( ComplexType(..)
+  , mkComplexType
   , AsComplexType(..)
-  , ComplexType(..)
   , CTBlock(..)
   , CTFinal(..)
   , CTContent(..)
   , ComplexRestriction(..)
   , ComplexExtension(..)
   , CTGroupDefinition(..)
+  -- * Lenses
+  , ctID
+  , ctAttrs
+  , ctAbstract
+  , ctBlock
+  , ctFinal
+  , ctMixed
+  , ctName
+  , ctContent
   )
   where
 
 import Prelude (Maybe (..))
 
 import Text.XML.Attrs
-import Text.XML.XSD.Internal.Lenses
-import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.XMLRep.Internal.Lenses
+import Text.XML.XSD.XMLRep.Internal.Types
 
+-- | Create a minimal "ComplexType" with some content
 mkComplexType :: CTContent -> Namespaced ComplexType
 mkComplexType content
   = (,) Nothing

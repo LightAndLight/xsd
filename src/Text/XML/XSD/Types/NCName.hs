@@ -1,5 +1,13 @@
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.NCName
+Description: XSD @NCName@ type
 
+The @NCName@ type.
+
+https://www.w3.org/TR/xmlschema-2/#NCName
+-}
+
+{-# language TemplateHaskell #-}
 module Text.XML.XSD.Types.NCName
   ( NCName
   , _getNCName

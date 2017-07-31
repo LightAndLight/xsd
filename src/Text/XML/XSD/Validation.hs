@@ -1,10 +1,23 @@
+{-|
+Module: Text.XML.XSD.Validation
+Description: Schema validation
+
+Validation of XML schemas, and validation of XML documents with respect to
+schemas
+-}
+
 {-#
 language
 
 GeneralizedNewtypeDeriving, RecordWildCards, QuasiQuotes,
 TemplateHaskell, OverloadedStrings, FlexibleContexts
 #-}
-module Text.XML.XSD.Component where
+module Text.XML.XSD.Validation
+  ( ValidationError(..)
+  , validateSchema
+  , validateDocument
+  )
+  where
 
 import Prelude
 
@@ -27,18 +40,19 @@ import Data.Text (Text)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import qualified Text.XML as XML (Document)
 import qualified Text.XML.XSD.XMLRep.ComplexType as XML
 import qualified Text.XML.XSD.XMLRep.ConstrainingFacet as XML
 import qualified Text.XML.XSD.XMLRep.Schema as XML
 import qualified Text.XML.XSD.XMLRep.SimpleType as XML
 
-import qualified Text.XML.XSD.Component.Builtins as Comp
-import qualified Text.XML.XSD.Component.ComplexType as Comp
-import qualified Text.XML.XSD.Component.ConstrainingFacet as Comp
-import qualified Text.XML.XSD.Component.FundamentalFacets as Comp
-import qualified Text.XML.XSD.Component.Notation as Comp
-import qualified Text.XML.XSD.Component.Schema as Comp
-import qualified Text.XML.XSD.Component.SimpleType as Comp
+import qualified Text.XML.XSD.Validation.Builtins as V
+import qualified Text.XML.XSD.Validation.ComplexType as V
+import qualified Text.XML.XSD.Validation.ConstrainingFacet as V
+import qualified Text.XML.XSD.Validation.FundamentalFacets as V
+import qualified Text.XML.XSD.Validation.Notation as V
+import qualified Text.XML.XSD.Validation.Schema as V
+import qualified Text.XML.XSD.Validation.SimpleType as V
 
 import Text.XML.XSD.Types.Base64Binary
 import Text.XML.XSD.Types.Boolean
@@ -53,6 +67,17 @@ import Text.XML.XSD.Types.NCName
 import Text.XML.XSD.Types.Time
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.URI
+
+-- | Validate an XML schema
+validateSchema :: XML.Schema -> Either ValidationError XML.Schema
+validateSchema = _
+
+-- | Validate an XML document according to an XML schema
+validateDocument
+  :: XML.Document
+  -> XML.Schema
+  -> Either ValidationError XML.Document
+validateDocument = _
 
 data PrimitiveType
   = TAnySimpleType
@@ -80,14 +105,16 @@ data PrimitiveType
 type ValidationEnv = Maybe URI
 data ValidationState
   = ValidationState
-  { _simpleTypes :: Map QName Comp.SimpleType
-  , _notations :: Map NCName Comp.Notation
+  { _simpleTypes :: Map QName V.SimpleType
+  , _notations :: Map NCName V.Notation
   }
+
+-- | Possible validation errors
 data ValidationError
   = MissingBaseTypeDefinition XML.SimpleType
   | MissingItemTypeDefinition XML.SimpleType
   | MissingMemberTypeDefinition XML.SimpleType
-  | BadItemTypeVariety XML.SimpleType Comp.STVariety
+  | BadItemTypeVariety XML.SimpleType V.STVariety
   | IncorrectType Text PrimitiveType
   | CyclicSimpleTypeDefinition XML.SimpleType (Set NCName)
 
@@ -107,11 +134,11 @@ newtype ValidateT m a
   , MonadError ValidationError
   )
 
-refineSchema :: Monad m => XML.Schema -> ValidateT m Comp.Schema
+refineSchema :: Monad m => XML.Schema -> ValidateT m V.Schema
 refineSchema XML.Schema{..} = do
   types <- traverse schemaElementToType _schemaBody
   pure
-    Comp.Schema
+    V.Schema
     { _schemaTypes = catMaybes types
     , _schemaAttrs = _
     , _schemaElements = _
@@ -123,12 +150,12 @@ refineSchema XML.Schema{..} = do
     schemaElementToType
       :: Monad m
       => XML.SchemaElement
-      -> ValidateT m (Maybe (Either Comp.SimpleType Comp.ComplexType))
+      -> ValidateT m (Maybe (Either V.SimpleType V.ComplexType))
     schemaElementToType e =
       case e of
         XML.SESimpleType st -> do
           st' <- refineSimpleType st
-          case Comp._stName st' of
+          case V._stName st' of
             Nothing -> pure ()
             Just name -> simpleTypes %= (M.insert (name ^?! re _NCName . _QName) st')
           pure . Just . Left $ st'
@@ -138,14 +165,14 @@ refineSchema XML.Schema{..} = do
 lookupSimpleType
   :: MonadState ValidationState m
   => Maybe QName
-  -> m (Maybe Comp.SimpleType)
+  -> m (Maybe V.SimpleType)
 lookupSimpleType a = uses simpleTypes $ \m -> flip M.lookup m =<< a
 
 onSTBaseType
   :: Monad m
-  => (Comp.SimpleType -> ValidateT m a)
-  -> (Comp.SimpleType -> ValidateT m a)
-  -> ([Comp.SimpleType] -> ValidateT m a)
+  => (V.SimpleType -> ValidateT m a)
+  -> (V.SimpleType -> ValidateT m a)
+  -> ([V.SimpleType] -> ValidateT m a)
   -> XML.SimpleType
   -> ValidateT m a
 onSTBaseType restriction list union s@XML.SimpleType{..} =
@@ -181,16 +208,16 @@ onSTBaseType restriction list union s@XML.SimpleType{..} =
             typeElements
         Just tys -> union tys
 
-stAncestors :: Comp.SimpleType -> [Comp.SimpleType]
+stAncestors :: V.SimpleType -> [V.SimpleType]
 stAncestors = go []
   where
     go acc st =
       let
-        base = st ^? Comp.stBaseType . _Right
+        base = st ^? V.stBaseType . _Right
         acc' = maybe acc (flip (:) acc) base
       in maybe acc' (go acc') base
 
-refineSimpleType :: Monad m => XML.SimpleType -> ValidateT m Comp.SimpleType
+refineSimpleType :: Monad m => XML.SimpleType -> ValidateT m V.SimpleType
 refineSimpleType s@XML.SimpleType{..} = do
   targetNamespace <- ask
   detectCycles s
@@ -198,7 +225,7 @@ refineSimpleType s@XML.SimpleType{..} = do
   facets <- simpleTypeFacets _stContent baseType
   variety <- simpleTypeVariety _stContent baseType
   pure
-    Comp.SimpleType
+    V.SimpleType
     { _stName = _stName
     , _stTargetnamespace = targetNamespace
     , _stBaseType = baseType
@@ -212,26 +239,26 @@ refineSimpleType s@XML.SimpleType{..} = do
     detectCycles sty =
       onSTBaseType
         (\ty -> do
-            let newBase = ty ^. Comp.stBaseType
-            either (const $ pure ()) (loop $ S.fromList (ty ^.. Comp.stName . _Just)) newBase)
+            let newBase = ty ^. V.stBaseType
+            either (const $ pure ()) (loop $ S.fromList (ty ^.. V.stName . _Just)) newBase)
         (\ty -> do
-            let newBase = ty ^. Comp.stBaseType
-            either (const $ pure ()) (loop $ S.fromList (ty ^.. Comp.stName . _Just)) newBase)
+            let newBase = ty ^. V.stBaseType
+            either (const $ pure ()) (loop $ S.fromList (ty ^.. V.stName . _Just)) newBase)
         (\tys -> do
-            let newBases = tys ^.. folded . Comp.stBaseType . _Right
-            traverse_ (loop $ S.fromList (newBases ^.. folded . Comp.stName . _Just)) newBases)
+            let newBases = tys ^.. folded . V.stBaseType . _Right
+            traverse_ (loop $ S.fromList (newBases ^.. folded . V.stName . _Just)) newBases)
         sty
       where
-        loop :: Monad m => Set NCName -> Comp.SimpleType -> ValidateT m ()
-        loop history Comp.SimpleType{..} =
+        loop :: Monad m => Set NCName -> V.SimpleType -> ValidateT m ()
+        loop history V.SimpleType{..} =
           case _stBaseType of
             Left _ -> pure ()
             Right ty
-              | Just name <- (ty ^? Comp.stName . _Just)
+              | Just name <- (ty ^? V.stName . _Just)
               , name `S.member` history -> 
                   throwError $
-                  CyclicSimpleTypeDefinition sty (maybe history (flip S.insert history) (ty ^. Comp.stName))
-              | otherwise -> loop (maybe history (flip S.insert history) (ty ^. Comp.stName)) ty
+                  CyclicSimpleTypeDefinition sty (maybe history (flip S.insert history) (ty ^. V.stName))
+              | otherwise -> loop (maybe history (flip S.insert history) (ty ^. V.stName)) ty
               
     simpleTypeBaseType content =
       case content of
@@ -241,8 +268,8 @@ refineSimpleType s@XML.SimpleType{..} = do
           case maybeBase <|> typeElement of
             Just ty -> pure . Right $ ty
             Nothing -> throwError $ MissingBaseTypeDefinition s
-        XML.STList{} -> pure . Left $ Comp.anySimpleType
-        XML.STUnion{} -> pure . Left $ Comp.anySimpleType
+        XML.STList{} -> pure . Left $ V.anySimpleType
+        XML.STUnion{} -> pure . Left $ V.anySimpleType
         
     simpleTypeFacets content baseType =
       case content of
@@ -253,15 +280,15 @@ refineSimpleType s@XML.SimpleType{..} = do
 
     simpleTypeVariety content baseType =
       case content of
-        XML.STRestriction{..} -> pure $ Comp.STVAtomic baseType
+        XML.STRestriction{..} -> pure $ V.STVAtomic baseType
         XML.STList{..} -> do
           maybeItemType <- lookupSimpleType _stlsItemType
           typeElement <- traverse refineSimpleType _stlsTypeElement
           case maybeItemType <|> typeElement of
             Just ty ->
-              case Comp._stVariety ty of
-                Comp.STVAtomic _ -> pure $ Comp.STVList ty
-                Comp.STVUnion _ -> pure $ Comp.STVList ty
+              case V._stVariety ty of
+                V.STVAtomic _ -> pure $ V.STVList ty
+                V.STVUnion _ -> pure $ V.STVList ty
                 v -> throwError $ BadItemTypeVariety s v
             Nothing -> throwError $ MissingItemTypeDefinition s
         XML.STUnion{..} -> do
@@ -271,40 +298,40 @@ refineSimpleType s@XML.SimpleType{..} = do
           typeElements <-
             traverseOf (traverse.traverse) refineSimpleType _stunTypeElements
           case sequence maybeMemberTypes <|> typeElements of
-            Just (ty:tys) -> pure $ Comp.STVUnion (ty :| tys)
+            Just (ty:tys) -> pure $ V.STVUnion (ty :| tys)
             _ -> throwError $ MissingMemberTypeDefinition s
             
     simpleTypeFinal final =
       case final of
-        Just XML.STAll -> [Comp.STFRestriction, Comp.STFList, Comp.STFUnion]
+        Just XML.STAll -> [V.STFRestriction, V.STFList, V.STFUnion]
         Just (XML.STMultiple vals) -> nub $ f vals
         Nothing -> []
       where
-        f :: [XML.STFFinal] -> [Comp.STFinal]
+        f :: [XML.STFFinal] -> [V.STFinal]
         f [] = []
         f (v:vs) =
           case v of
-            XML.STFList -> Comp.STFList : f vs
-            XML.STFUnion -> Comp.STFUnion : f vs
-            XML.STFRestriction -> Comp.STFRestriction : f vs
+            XML.STFList -> V.STFList : f vs
+            XML.STFUnion -> V.STFUnion : f vs
+            XML.STFRestriction -> V.STFRestriction : f vs
             
     simpleTypeFundamentalFacets variety baseType =
-      Comp.FundamentalFacets
+      V.FundamentalFacets
       { _ffOrdered =
           case variety of
-            Comp.STVAtomic _
-              | Right ty <- baseType -> ty ^. Comp.stFundamentalFacets . Comp.ffOrdered
-              | otherwise -> Comp.None
-            Comp.STVList _ -> Comp.None
-            Comp.STVUnion _ -> _
+            V.STVAtomic _
+              | Right ty <- baseType -> ty ^. V.stFundamentalFacets . V.ffOrdered
+              | otherwise -> V.None
+            V.STVList _ -> V.None
+            V.STVUnion _ -> _
       , _ffBounded = _
       , _ffCardinality = _
       , _ffNumeric = _
       }
 
-hasSimpleType :: Monad m => Either Comp.AnySimpleType Comp.SimpleType -> Text -> ValidateT m Text
-hasSimpleType (Left Comp.AnySimpleType{..}) input = pure input
-hasSimpleType (Right Comp.SimpleType{..}) input = do
+hasSimpleType :: Monad m => Either V.AnySimpleType V.SimpleType -> Text -> ValidateT m Text
+hasSimpleType (Left V.AnySimpleType{..}) input = pure input
+hasSimpleType (Right V.SimpleType{..}) input = do
   (pred, ty) <-
     case _stName ^? _Just . re _NCName of
       Just "anySimpleType" -> pure (const True, TAnySimpleType)
@@ -343,8 +370,8 @@ hasSimpleType (Right Comp.SimpleType{..}) input = do
 refineConstrainingFacets
   :: Monad m
   => [XML.ConstrainingFacet]
-  -> Comp.SimpleType
-  -> ValidateT m [Comp.ConstrainingFacet]
+  -> V.SimpleType
+  -> ValidateT m [V.ConstrainingFacet]
 refineConstrainingFacets cfs expected =
   let (enums, cfs') = go cfs
   in
@@ -353,7 +380,7 @@ refineConstrainingFacets cfs expected =
     combineEnums enums = do
       values <- traverse (hasSimpleType (Right expected) . XML._cfEnumerationValue) enums
       pure
-        Comp.CFEnumeration { _cfEnumerationValue = values }
+        V.CFEnumeration { _cfEnumerationValue = values }
     
     go [] = ([], [])
     go (cf:cfs) = 
@@ -361,7 +388,7 @@ refineConstrainingFacets cfs expected =
         XML.CFLength{..} ->
           let
             val =
-              Comp.CFLength
+              V.CFLength
               { _cfLengthValue = _cfLengthValue
               , _cfLengthFixed = fromMaybe False _cfLengthFixed
               }
@@ -369,7 +396,7 @@ refineConstrainingFacets cfs expected =
         XML.CFMinLength{..} ->
           let
             val =
-              Comp.CFMinLength
+              V.CFMinLength
               { _cfMinLengthValue = _cfMinLengthValue
               , _cfMinLengthFixed = fromMaybe False _cfMinLengthFixed
               }
@@ -377,25 +404,25 @@ refineConstrainingFacets cfs expected =
         XML.CFMaxLength{..} ->
           let
             val =
-              Comp.CFMaxLength
+              V.CFMaxLength
               { _cfMaxLengthValue = _cfMaxLengthValue
               , _cfMaxLengthFixed = fromMaybe False _cfMaxLengthFixed
               }
           in second (val :) $ go cfs
-        XML.CFPattern{..} -> second (Comp.CFPattern{..} :) $ go cfs
+        XML.CFPattern{..} -> second (V.CFPattern{..} :) $ go cfs
         XML.CFEnumeration{..} -> first (cf :) $ go cfs
         XML.CFWhiteSpace{..} ->
           let
             val =
-              Comp.CFWhiteSpace
+              V.CFWhiteSpace
               { _cfWhiteSpaceValue =
                 case _cfWhiteSpaceValue of
-                  XML.Collapse -> Comp.WSCollapse
-                  XML.Replace -> Comp.WSReplace
-                  XML.Preserve -> Comp.WSPreserve
+                  XML.Collapse -> V.WSCollapse
+                  XML.Replace -> V.WSReplace
+                  XML.Preserve -> V.WSPreserve
               , _cfWhiteSpaceFixed = fromMaybe False _cfWhiteSpaceFixed
               }
           in second (val :) $ go cfs
 
-refineComplexType :: Monad m => XML.ComplexType -> ValidateT m Comp.ComplexType
+refineComplexType :: Monad m => XML.ComplexType -> ValidateT m V.ComplexType
 refineComplexType = _

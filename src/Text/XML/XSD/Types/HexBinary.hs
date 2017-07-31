@@ -1,5 +1,13 @@
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.HexBinary
+Description: XSD @hexBinary@ type
 
+The @hexBinary@ type.
+
+https://www.w3.org/TR/xmlschema-2/#hexBinary
+-}
+
+{-# language TemplateHaskell #-}
 module Text.XML.XSD.Types.HexBinary
   ( HexBinary
   , isHexBinary

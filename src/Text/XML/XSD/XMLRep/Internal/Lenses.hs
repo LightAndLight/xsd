@@ -5,7 +5,7 @@ ExistentialQuantification, LambdaCase, OverloadedStrings, QuasiQuotes, RankNType
 TypeSynonymInstances, FlexibleInstances
 #-}
 
-module Text.XML.XSD.Internal.Lenses where
+module Text.XML.XSD.XMLRep.Internal.Lenses where
 
 import Prelude
 
@@ -27,17 +27,17 @@ import qualified Text.XML.Lens as XML
 import Text.XML.Attrs
 import Text.XML.XSD.Types.Boolean
 import Text.XML.XSD.Types.NCName
-import Text.XML.XSD.Types.NonNegative
+import Text.XML.XSD.Types.NonNegativeInteger
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.Regex
 import Text.XML.XSD.Types.Token
 import Text.XML.XSD.Types.URI
-import Text.XML.XSD.Block
-import Text.XML.XSD.Final
-import Text.XML.XSD.Form
-import Text.XML.XSD.Namespace
-import Text.XML.XSD.ProcessContents
-import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.XMLRep.Fields.Block
+import Text.XML.XSD.XMLRep.Fields.Final
+import Text.XML.XSD.XMLRep.Fields.Form
+import Text.XML.XSD.XMLRep.Fields.Namespace
+import Text.XML.XSD.XMLRep.Fields.ProcessContents
+import Text.XML.XSD.XMLRep.Internal.Types
 
 createAttrs :: [XML.Name] -> Map XML.Name Text -> Attrs
 createAttrs reservedKeys elemAttrs =
@@ -96,15 +96,15 @@ _ConstrainingFacet = prism' constraintFacetToElement elementToConstrainingFacet
         , teAttrs =
             \case
               CFLength{..} ->
-                [ Just ([qn|value|], _NonNegative # _cfLengthValue)
+                [ Just ([qn|value|], _NonNegativeInteger # _cfLengthValue)
                 , (,) [qn|fixed|] . (_Boolean #) <$> _cfLengthFixed
                 ]
               CFMinLength{..} ->
-                 [ Just ([qn|value|], _NonNegative # _cfMinLengthValue)
+                 [ Just ([qn|value|], _NonNegativeInteger # _cfMinLengthValue)
                  , (,) [qn|fixed|] . (_Boolean #) <$> _cfMinLengthFixed
                  ]
               CFMaxLength{..} ->
-                [ Just ([qn|value|], _NonNegative # _cfMaxLengthValue)
+                [ Just ([qn|value|], _NonNegativeInteger # _cfMaxLengthValue)
                 , (,) [qn|fixed|] . (_Boolean #) <$> _cfMaxLengthFixed
                 ]
               CFPattern{..} ->
@@ -130,15 +130,15 @@ _ConstrainingFacet = prism' constraintFacetToElement elementToConstrainingFacet
         ns = elementName ^. XML._nameNamespace
       el <- case XML.nameLocalName elementName of
         "length" ->
-          let v = elementAttributes ^? at "value" . _Just . _NonNegative
+          let v = elementAttributes ^? at "value" . _Just . _NonNegativeInteger
           in CFLength i <$> v <*> pure f <*> pure att
 
         "minLength" ->
-          let v = elementAttributes ^? at "value" . _Just . _NonNegative
+          let v = elementAttributes ^? at "value" . _Just . _NonNegativeInteger
           in CFMinLength i <$> v <*> pure f <*> pure att
 
         "maxLength" ->
-          let v = elementAttributes ^? at "value" . _Just . _NonNegative
+          let v = elementAttributes ^? at "value" . _Just . _NonNegativeInteger
           in CFMaxLength i <$> v <*> pure f <*> pure att
 
         "pattern" ->
@@ -726,11 +726,11 @@ _Occurances =
   prism'
     (\case
         Unbounded -> "unbounded"
-        Bounded n -> review _NonNegative n)
+        Bounded n -> review _NonNegativeInteger n)
 
     (\case
         "unbounded" -> Just Unbounded
-        a -> Bounded <$> (a ^? _NonNegative))
+        a -> Bounded <$> (a ^? _NonNegativeInteger))
 
 class AsGroup s where
   _Group :: Prism' s (Namespaced Group)
@@ -744,7 +744,7 @@ instance AsGroup XML.Element where
         { teName = const "group"
         , teAttrs = \Group{..} ->
           [ (,) [qn|maxOccurs|] . review _Occurances <$> _grMaxOccurs
-          , (,) [qn|minOccurs|] . review _NonNegative <$> _grMinOccurs
+          , (,) [qn|minOccurs|] . review _NonNegativeInteger <$> _grMinOccurs
           , (,) [qn|name|] . review _NCName <$> _grName
           , (,) [qn|ref|] . review _QName <$> _grRef
           ]
@@ -764,7 +764,7 @@ instance AsGroup XML.Element where
               _grMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _grMinOccurs =
-                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegativeInteger
               _grName =
                 elementAttributes ^? at "name" . _Just . _NCName
               _grRef =
@@ -854,7 +854,7 @@ instance AsAny XML.Element where
         , teAttrs = \Any{..} ->
           [ (,) [qn|id|] . review _NCName <$> _anyID
           , (,) [qn|maxOccurs|] . review _Occurances <$> _anyMaxOccurs
-          , (,) [qn|minOccurs|] . review _NonNegative <$> _anyMinOccurs
+          , (,) [qn|minOccurs|] . review _NonNegativeInteger <$> _anyMinOccurs
           , (,) [qn|namespace|] . review _Namespace <$> _anyNamespace
           , (,) [qn|processContents|] .
             review _ProcessContents <$> _anyProcessContents
@@ -875,7 +875,7 @@ instance AsAny XML.Element where
               _anyMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _anyMinOccurs =
-                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegativeInteger
               _anyNamespace =
                 elementAttributes ^? at "namespace" . _Just . _Namespace
               _anyProcessContents =
@@ -920,7 +920,7 @@ instance AsChoice XML.Element where
         , teAttrs = \Choice{..} ->
           [ (,) [qn|id|] . review _NCName <$> _choiceID
           , (,) [qn|maxOccurs|] . review _Occurances <$> _choiceMaxOccurs
-          , (,) [qn|minOccurs|] . review _NonNegative <$> _choiceMinOccurs
+          , (,) [qn|minOccurs|] . review _NonNegativeInteger <$> _choiceMinOccurs
           ]
         , teContents =
           [ TEContent (Fold $ choiceContent . folded) (Fold $ re _ChoiceContent) ]
@@ -939,7 +939,7 @@ instance AsChoice XML.Element where
               _choiceMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _choiceMinOccurs =
-                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegativeInteger
               _choiceAttrs =
                 createAttrs reservedKeys elementAttributes
               _choiceContent =
@@ -980,7 +980,7 @@ instance AsSequence XML.Element where
         , teAttrs = \Sequence{..} ->
           [ (,) [qn|id|] . review _NCName <$> _sequenceID
           , (,) [qn|maxOccurs|] . review _Occurances <$> _sequenceMaxOccurs
-          , (,) [qn|minOccurs|] . review _NonNegative <$> _sequenceMinOccurs
+          , (,) [qn|minOccurs|] . review _NonNegativeInteger <$> _sequenceMinOccurs
           ]
         , teContents =
           [ TEContent (Fold $ sequenceContent . folded) (Fold $ re _SequenceContent) ]
@@ -999,7 +999,7 @@ instance AsSequence XML.Element where
               _sequenceMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _sequenceMinOccurs =
-                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegativeInteger
               _sequenceAttrs =
                 createAttrs reservedKeys elementAttributes
               _sequenceContent =
@@ -1260,7 +1260,7 @@ instance AsElement XML.Element where
           , (,) [qn|abstract|] . review _Boolean <$> _elAbstract
           , (,) [qn|form|] . review _Form <$> _elForm
           , (,) [qn|maxOccurs|] . review _Occurances <$> _elMaxOccurs
-          , (,) [qn|minOccurs|] . review _NonNegative <$> _elMinOccurs
+          , (,) [qn|minOccurs|] . review _NonNegativeInteger <$> _elMinOccurs
           , (,) [qn|name|] . review _NCName <$> _elName
           , (,) [qn|nillable|] . review _Boolean <$> _elNillable
           , (,) [qn|type|] . review _QName <$> _elTypeName
@@ -1298,7 +1298,7 @@ instance AsElement XML.Element where
               _elMaxOccurs =
                 elementAttributes ^? at "maxOccurs" . _Just . _Occurances
               _elMinOccurs =
-                elementAttributes ^? at "minOccurs" . _Just . _NonNegative
+                elementAttributes ^? at "minOccurs" . _Just . _NonNegativeInteger
               _elName =
                 elementAttributes ^? at "name" . _Just . _NCName
               _elNillable =

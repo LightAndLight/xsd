@@ -1,5 +1,16 @@
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Base64Binary
+Description: XSD base64Binary type
 
+The @base64Binary@ type.
+
+https://www.w3.org/TR/xmlschema-2/#base64Binary
+
+Note: this type has no @parse*@ function because the parsing is handled by the
+@base64-bytestring@ library.
+-}
+
+{-# language TemplateHaskell #-}
 module Text.XML.XSD.Types.Base64Binary
   ( Base64Binary
   , isBase64Binary

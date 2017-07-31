@@ -1,6 +1,15 @@
-{-# language OverloadedStrings #-}
+{-|
+Module: Text.XML.XSD.XMLRep.Form
+Description: XSD @form@ attribute
 
-module Text.XML.XSD.Form where
+Prism for the @form@ attribute, used in:
+
+* https://www.w3.org/TR/xmlschema-1/#element-attribute
+* https://www.w3.org/TR/xmlschema-1/#element-element
+-}
+
+{-# language OverloadedStrings #-}
+module Text.XML.XSD.XMLRep.Fields.Form where
 
 import Prelude
 
@@ -10,9 +19,9 @@ import Data.Text (Text)
 
 import qualified Data.Text as T
 
--- | Element/attribute forms
 data Form = Qualified | Unqualified deriving (Eq, Show)
 
+-- | Prism for things that might represent a "Form"
 class AsForm s where
   _Form :: Prism' s Form
 

@@ -1,10 +1,15 @@
-{-# language DeriveLift #-}
-{-# language OverloadedStrings #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Float
+Description: XSD @float@ type
 
+The @float@ type.
+
+https://www.w3.org/TR/xmlschema-2/#float
+-}
+
+{-# language DeriveLift, OverloadedStrings, TemplateHaskell #-}
 module Text.XML.XSD.Types.Float
-  ( Float
-  , isFloat
+  ( isFloat
   , mkFloat
   , parseFloat
   , fl
@@ -50,8 +55,8 @@ toFloat (Float' s1 m s2 e) =
   showSign s2 <>
   e
     
--- This is terribly roundabout, but I want proper parsing support for all
--- types
+-- This is terribly roundabout, but I want proper parsing support for asIndex
+-- many types as possible
 parseFloat :: CharParsing m => m Float
 parseFloat =
   fmap toFloat $ Float' <$>

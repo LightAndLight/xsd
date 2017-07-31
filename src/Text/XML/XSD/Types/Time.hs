@@ -1,8 +1,13 @@
-{-# language DeriveLift #-}
-{-# language LambdaCase #-}
-{-# language RecordWildCards #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Time
+Description: XSD @time@ type
 
+The @time@ type.
+
+https://www.w3.org/TR/xmlschema-2/#time
+-}
+
+{-# language DeriveLift, LambdaCase, RecordWildCards, TemplateHaskell #-}
 module Text.XML.XSD.Types.Time
   ( Time
   , isTime

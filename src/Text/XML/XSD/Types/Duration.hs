@@ -1,9 +1,17 @@
+{-|
+Module: Text.XML.XSD.Types.Duration
+Description: XSD @duration@ type
+
+The @duration@ type.
+
+https://www.w3.org/TR/xmlschema-2/#duration
+-}
+
 {-#
 language
 
 DeriveLift, RecordWildCards, OverloadedStrings, TemplateHaskell
 #-}
-
 module Text.XML.XSD.Types.Duration
   ( Duration
   , isDuration

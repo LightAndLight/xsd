@@ -1,10 +1,17 @@
-{-# language DeriveLift #-}
-{-# language LambdaCase #-}
-{-# language OverloadedStrings #-}
-{-# language QuasiQuotes #-}
-{-# language RecordWildCards #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.QName
+Description: XSD @QName@ type
 
+The @QName@ type.
+
+https://www.w3.org/TR/xmlschema-2/#QName
+-}
+
+{-# language
+
+DeriveLift, LambdaCase, OverloadedStrings, QuasiQuotes,
+RecordWildCards, TemplateHaskell
+#-}
 module Text.XML.XSD.Types.QName
   ( QName
   , isQName
@@ -47,6 +54,7 @@ data QName
 
 makeLenses ''QName
 
+-- | Convert an @xml-conduit@ "XML.Name" to a "QName"
 nameToQName :: XML.Name -> QName
 nameToQName n =
   QName
@@ -55,6 +63,7 @@ nameToQName n =
   }
 
 -- TODO: Namespacing problems?
+-- | Convert a "QName" to an @xml-conduit@ "XML.Name"
 qNameToName :: QName -> XML.Name
 qNameToName QName{..} =
   XML.Name

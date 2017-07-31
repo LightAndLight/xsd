@@ -1,5 +1,14 @@
+{-|
+Module: Text.XML.XSD.Validation.Notation
+Description: @Notation Declaration@ schema component
+
+The @Notation Declaration@ schema component
+
+https://www.w3.org/TR/xmlschema-2/#Notation_Declaration_details
+-}
+
 {-# language TemplateHaskell #-}
-module Text.XML.XSD.Component.Notation
+module Text.XML.XSD.Validation.Notation
   ( Notation(..)
   , NotationIdentifier(..)
   -- * Lenses

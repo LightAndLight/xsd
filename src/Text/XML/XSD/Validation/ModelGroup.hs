@@ -1,6 +1,6 @@
 {-# language TemplateHaskell #-}
 
-module Text.XML.XSD.Component.ModelGroup
+module Text.XML.XSD.Validation.ModelGroup
   ( MGCompositor(..)
   , ModelGroup(..)
   -- * Lenses
@@ -11,4 +11,4 @@ module Text.XML.XSD.Component.ModelGroup
   )
   where
 
-import Text.XML.XSD.Component.Internal
+import Text.XML.XSD.Validation.Internal

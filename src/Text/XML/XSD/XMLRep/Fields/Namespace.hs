@@ -1,10 +1,17 @@
+{-|
+Module: Text.XML.XSD.XMLRep.Namespace
+Description: XSD @namespace@ attribute
+
+Prism for the @namespace@ attribute, as used in
+https://www.w3.org/TR/xmlschema-1/#element-any and https://www.w3.org/TR/xmlschema-1/#element-anyAttribute
+-}
+
 {-#
 language
 
 LambdaCase, OverloadedStrings
 #-}
-
-module Text.XML.XSD.Namespace
+module Text.XML.XSD.XMLRep.Fields.Namespace
   ( Namespace(..)
   , _Namespace
   , Locality(..)
@@ -19,7 +26,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XML.XSD.Types.URI
-import Text.XML.XSD.Internal.Types
+import Text.XML.XSD.XMLRep.Internal.Types
 
 _Locality :: Prism' Text Locality
 _Locality =

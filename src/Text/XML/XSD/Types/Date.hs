@@ -1,6 +1,17 @@
-{-# language DeriveLift #-}
-{-# language RecordWildCards #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Date
+Description: XSD @date@ type
+
+The @boolean@ type.
+
+https://www.w3.org/TR/xmlschema-2/#date
+-}
+
+{-#
+language
+
+DeriveLift, RecordWildCards, TemplateHaskell
+#-}
 
 module Text.XML.XSD.Types.Date
   ( Date

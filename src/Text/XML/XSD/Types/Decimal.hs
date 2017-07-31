@@ -1,6 +1,13 @@
-{-# language DeriveLift #-}
-{-# language OverloadedStrings #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Decimal
+Description: XSD @decimal@ type
+
+The @decimal@ type.
+
+https://www.w3.org/TR/xmlschema-2/#decimal
+-}
+
+{-# language DeriveLift, OverloadedStrings, TemplateHaskell #-}
 
 module Text.XML.XSD.Types.Decimal
   ( Decimal

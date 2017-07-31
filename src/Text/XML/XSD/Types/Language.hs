@@ -1,6 +1,13 @@
-{-# language OverloadedStrings #-}
-{-# language TemplateHaskell #-}
+{-|
+Module: Text.XML.XSD.Types.Language
+Description: XSD @language@ type
 
+The @language@ type.
+
+https://www.w3.org/TR/xmlschema-2/#language
+-}
+
+{-# language OverloadedStrings, TemplateHaskell #-}
 module Text.XML.XSD.Types.Language
   ( Language
   , isLanguage

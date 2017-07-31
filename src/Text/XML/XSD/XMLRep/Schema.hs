@@ -1,3 +1,12 @@
+{-|
+Module: Text.XML.XSD.XMLRep.Schema
+Description: XSD @schema@ element
+
+The XSD @schema@ element
+
+https://www.w3.org/TR/xmlschema-1/#element-schema
+-}
+
 {-#
 language
 
@@ -5,14 +14,19 @@ LambdaCase, MultiParamTypeClasses, OverloadedStrings, TemplateHaskell,
 RecordWildCards, QuasiQuotes, TypeSynonymInstances, FlexibleInstances
 #-}
 
+
 module Text.XML.XSD.XMLRep.Schema
-  ( schema
-  , Schema(..)
-  , _Schema
+  ( Schema(..)
   , SchemaPrelude(..)
   , SchemaElement(..)
-  , _SchemaElement
+  , SchemaBlock(..)
+  , SchemaBlockDefault(..)
+  , SchemaFinal(..)
+  , SchemaFinalDefault(..)
+  , schema
   -- ^ Lenses
+  , _Schema
+  , _SchemaElement
   , schemaID
   , schemaAttributeFormDefault
   , schemaBlockDefault
@@ -48,11 +62,11 @@ import Text.XML.XSD.Types.NCName
 import Text.XML.XSD.Types.QName
 import Text.XML.XSD.Types.Token
 import Text.XML.XSD.Types.URI
-import Text.XML.XSD.Block
-import Text.XML.XSD.Final
-import Text.XML.XSD.Form
-import Text.XML.XSD.Internal.Types
-import Text.XML.XSD.Internal.Lenses
+import Text.XML.XSD.XMLRep.Fields.Block
+import Text.XML.XSD.XMLRep.Fields.Final
+import Text.XML.XSD.XMLRep.Fields.Form
+import Text.XML.XSD.XMLRep.Internal.Types
+import Text.XML.XSD.XMLRep.Internal.Lenses
 
 schemaURI :: URI
 schemaURI = [uri|https://www.w3.org/2001/XMLSchema|]
@@ -117,25 +131,28 @@ parseSchemaFinal input =
     "union" -> Just SFUnion
     _ -> Nothing
 
+instance AsFinal Text SchemaFinal where
+  _Final = prism' showSchemaFinal parseSchemaFinal
+
 -- | Permitted 'schemaFinalDefault' values
 data SchemaFinalDefault = SFAll | SFMultiple [SchemaFinal]
   deriving (Eq, Show)
 
-showSchemaFinalDefault :: SchemaFinalDefault -> Text
-showSchemaFinalDefault a =
-  case a of
-    SFAll -> "#all"
-    SFMultiple elems -> T.unwords $ fmap showSchemaFinal elems
-
-parseSchemaFinalDefault :: Text -> Maybe SchemaFinalDefault
-parseSchemaFinalDefault a =
-  case a of
-    "" -> Just $ SFMultiple []
-    "#all" -> Just SFAll
-    _ -> SFMultiple <$> traverse parseSchemaFinal (T.words a)
-
 instance AsFinal Text SchemaFinalDefault where
   _Final = prism' showSchemaFinalDefault parseSchemaFinalDefault
+    where
+      showSchemaFinalDefault :: SchemaFinalDefault -> Text
+      showSchemaFinalDefault a =
+        case a of
+          SFAll -> "#all"
+          SFMultiple elems -> T.unwords $ fmap showSchemaFinal elems
+
+      parseSchemaFinalDefault :: Text -> Maybe SchemaFinalDefault
+      parseSchemaFinalDefault a =
+        case a of
+          "" -> Just $ SFMultiple []
+          "#all" -> Just SFAll
+          _ -> SFMultiple <$> traverse parseSchemaFinal (T.words a)
 
 -- | Permitted 'schema' prelude values.
 data SchemaPrelude
@@ -215,7 +232,6 @@ instance AsComplexType SchemaElement where
       SEComplexType a -> Just (Nothing, a)
       _ -> Nothing
 
--- | 'schema' element https://www.w3.org/TR/xmlschema-1/#element-schema 
 data Schema
   = Schema
   { _schemaID :: Maybe NCName
@@ -232,7 +248,7 @@ data Schema
   , _schemaNamespace :: (Maybe NCName, URI)
   } deriving (Eq, Show)
 
--- | An empty 'schema' element
+-- | Construct a minimal "Schema" containing some "SchemaElement"s
 schema :: [SchemaElement] -> Schema
 schema content
   = Schema

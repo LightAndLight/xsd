@@ -54,19 +54,15 @@ library
                       src
 
   other-modules:
-                      Text.XML.XSD.Component.Internal
-                      Text.XML.XSD.Internal.Lenses
-                      Text.XML.XSD.Internal.Types
+                      Text.XML.XSD.Validation.Internal
+                      Text.XML.XSD.XMLRep.Internal.Lenses
+                      Text.XML.XSD.XMLRep.Internal.Types
                       Text.XML.XSD.Types.Numbers.Sign
 
   exposed-modules:    Example
                       Text.XML.Attrs
                       Text.XML.XSD
-                      Text.XML.XSD.Block
-                      Text.XML.XSD.Final
-                      Text.XML.XSD.Form
-                      Text.XML.XSD.Namespace
-                      Text.XML.XSD.ProcessContents
+                      Text.XML.XSD.Types
                       Text.XML.XSD.Types.Base64Binary
                       Text.XML.XSD.Types.Boolean
                       Text.XML.XSD.Types.Date
@@ -79,34 +75,40 @@ library
                       Text.XML.XSD.Types.ID
                       Text.XML.XSD.Types.Language
                       Text.XML.XSD.Types.NCName
-                      Text.XML.XSD.Types.NonNegative
-                      Text.XML.XSD.Types.Positive
+                      Text.XML.XSD.Types.NonNegativeInteger
+                      Text.XML.XSD.Types.PositiveInteger
                       Text.XML.XSD.Types.QName
                       Text.XML.XSD.Types.Regex
                       Text.XML.XSD.Types.Time
                       Text.XML.XSD.Types.Token
+                      Text.XML.XSD.XMLRep
                       Text.XML.XSD.XMLRep.Attribute
                       Text.XML.XSD.XMLRep.AttributeGroup
                       Text.XML.XSD.XMLRep.ComplexType
                       Text.XML.XSD.XMLRep.ConstrainingFacet
                       Text.XML.XSD.XMLRep.Element
+                      Text.XML.XSD.XMLRep.Fields.Block
+                      Text.XML.XSD.XMLRep.Fields.Final
+                      Text.XML.XSD.XMLRep.Fields.Form
+                      Text.XML.XSD.XMLRep.Fields.Namespace
+                      Text.XML.XSD.XMLRep.Fields.ProcessContents
                       Text.XML.XSD.XMLRep.Group
                       Text.XML.XSD.XMLRep.Notation
                       Text.XML.XSD.XMLRep.Schema
                       Text.XML.XSD.XMLRep.Sequence
                       Text.XML.XSD.XMLRep.SimpleType
-                      Text.XML.XSD.Component
-                      Text.XML.XSD.Component.Attribute
-                      Text.XML.XSD.Component.AttributeGroup
-                      Text.XML.XSD.Component.Builtins
-                      Text.XML.XSD.Component.ComplexType
-                      Text.XML.XSD.Component.ConstrainingFacet
-                      Text.XML.XSD.Component.Element
-                      Text.XML.XSD.Component.FundamentalFacets
-                      Text.XML.XSD.Component.IdentityConstraint
-                      Text.XML.XSD.Component.Notation
-                      Text.XML.XSD.Component.Schema
-                      Text.XML.XSD.Component.SimpleType
+                      Text.XML.XSD.Validation
+                      Text.XML.XSD.Validation.Attribute
+                      Text.XML.XSD.Validation.AttributeGroup
+                      Text.XML.XSD.Validation.Builtins
+                      Text.XML.XSD.Validation.ComplexType
+                      Text.XML.XSD.Validation.ConstrainingFacet
+                      Text.XML.XSD.Validation.Element
+                      Text.XML.XSD.Validation.FundamentalFacets
+                      Text.XML.XSD.Validation.IdentityConstraint
+                      Text.XML.XSD.Validation.Notation
+                      Text.XML.XSD.Validation.Schema
+                      Text.XML.XSD.Validation.SimpleType
 
 test-suite doctests
   type:

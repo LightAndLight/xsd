@@ -106,6 +106,7 @@ library
                       Text.XML.XSD.Validation.Element
                       Text.XML.XSD.Validation.FundamentalFacets
                       Text.XML.XSD.Validation.IdentityConstraint
+                      Text.XML.XSD.Validation.Monad
                       Text.XML.XSD.Validation.Notation
                       Text.XML.XSD.Validation.Schema
                       Text.XML.XSD.Validation.SimpleType

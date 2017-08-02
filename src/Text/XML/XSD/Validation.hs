@@ -9,8 +9,7 @@ schemas
 {-#
 language
 
-GeneralizedNewtypeDeriving, RecordWildCards, QuasiQuotes,
-TemplateHaskell, OverloadedStrings, FlexibleContexts
+RecordWildCards, QuasiQuotes, OverloadedStrings, FlexibleContexts
 #-}
 module Text.XML.XSD.Validation
   ( ValidationError(..)
@@ -38,6 +37,7 @@ import Data.Set (Set)
 import Data.Text (Text)
 
 import qualified Data.Map as M
+import qualified Data.List.NonEmpty as N
 import qualified Data.Set as S
 
 import qualified Text.XML as XML (Document)
@@ -54,85 +54,9 @@ import qualified Text.XML.XSD.Validation.Notation as V
 import qualified Text.XML.XSD.Validation.Schema as V
 import qualified Text.XML.XSD.Validation.SimpleType as V
 
-import Text.XML.XSD.Types.Base64Binary
-import Text.XML.XSD.Types.Boolean
-import Text.XML.XSD.Types.Date
-import Text.XML.XSD.Types.DateTime
-import Text.XML.XSD.Types.Decimal
-import Text.XML.XSD.Types.Double
-import Text.XML.XSD.Types.Duration
-import Text.XML.XSD.Types.Float
-import Text.XML.XSD.Types.HexBinary
-import Text.XML.XSD.Types.NCName
-import Text.XML.XSD.Types.Time
-import Text.XML.XSD.Types.QName
-import Text.XML.XSD.Types.URI
+import Text.XML.XSD.Types
 
--- | Validate an XML schema
-validateSchema :: XML.Schema -> Either ValidationError XML.Schema
-validateSchema = _
-
--- | Validate an XML document according to an XML schema
-validateDocument
-  :: XML.Document
-  -> XML.Schema
-  -> Either ValidationError XML.Document
-validateDocument = _
-
-data PrimitiveType
-  = TAnySimpleType
-  | TString
-  | TBoolean
-  | TDecimal
-  | TFloat
-  | TDouble
-  | TDuration
-  | TDateTime
-  | TTime
-  | TDate
-  | TGYearMonth
-  | TGYear
-  | TGMonthDay
-  | TGDay
-  | TGMonth
-  | THexBinary
-  | TBase64Binary
-  | TAnyURI
-  | TQName
-  | TNOTATION
-  deriving (Eq, Show)
-
-type ValidationEnv = Maybe URI
-data ValidationState
-  = ValidationState
-  { _simpleTypes :: Map QName V.SimpleType
-  , _notations :: Map NCName V.Notation
-  }
-
--- | Possible validation errors
-data ValidationError
-  = MissingBaseTypeDefinition XML.SimpleType
-  | MissingItemTypeDefinition XML.SimpleType
-  | MissingMemberTypeDefinition XML.SimpleType
-  | BadItemTypeVariety XML.SimpleType V.STVariety
-  | IncorrectType Text PrimitiveType
-  | CyclicSimpleTypeDefinition XML.SimpleType (Set NCName)
-
-makeLenses ''ValidationState
-
-newtype ValidateT m a
-  = ValidateT
-  { runValidateT
-    :: ExceptT ValidationError (StateT ValidationState (ReaderT ValidationEnv m)) a
-  } deriving
-  ( Functor
-  , Applicative
-  , Monad
-  , MonadIO
-  , MonadState ValidationState
-  , MonadReader ValidationEnv
-  , MonadError ValidationError
-  )
+import Text.XML.XSD.Validation.Monad
 
 refineSchema :: Monad m => XML.Schema -> ValidateT m V.Schema
 refineSchema XML.Schema{..} = do
@@ -209,7 +133,7 @@ onSTBaseType restriction list union s@XML.SimpleType{..} =
         Just tys -> union tys
 
 stAncestors :: V.SimpleType -> [V.SimpleType]
-stAncestors = go []
+stAncestors = go [] 
   where
     go acc st =
       let
@@ -217,13 +141,35 @@ stAncestors = go []
         acc' = maybe acc (flip (:) acc) base
       in maybe acc' (go acc') base
 
+-- | Take the (left-biased) union of two sets of facets as described in
+-- | https://www.w3.org/TR/xmlschema-1/#st-restrict-facets
+unionFacets
+  -- ^ @S@ - This set is guaranteed to be a subset of the output
+  :: [V.ConstrainingFacet]
+  -- ^ @B@ - This set may have elements replace by elements from @S@
+  -> [V.ConstrainingFacet]
+  -> [V.ConstrainingFacet]
+unionFacets [] fs' = fs' 
+unionFacets fs [] = fs
+unionFacets (f:fs) (f':fs')
+  | sameFacetKind f f' = _
+
+-- Each element is a list where each element is the parent of the element
+-- before it
+--
+-- Returns the lowest common ancestor
+lca :: Eq a => [[a]] -> Maybe a
+lca [] = Nothing
+lca (x:xs) =
+  asum $ fmap (\y -> if all (y `elem`) xs then Just y else Nothing) x
+
 refineSimpleType :: Monad m => XML.SimpleType -> ValidateT m V.SimpleType
 refineSimpleType s@XML.SimpleType{..} = do
   targetNamespace <- ask
   detectCycles s
   baseType <- simpleTypeBaseType _stContent
-  facets <- simpleTypeFacets _stContent baseType
   variety <- simpleTypeVariety _stContent baseType
+  facets <- simpleTypeFacets _stFacets _stContent baseType variety 
   pure
     V.SimpleType
     { _stName = _stName
@@ -270,12 +216,20 @@ refineSimpleType s@XML.SimpleType{..} = do
             Nothing -> throwError $ MissingBaseTypeDefinition s
         XML.STList{} -> pure . Left $ V.anySimpleType
         XML.STUnion{} -> pure . Left $ V.anySimpleType
-        
-    simpleTypeFacets content baseType =
+
+    -- https://www.w3.org/TR/xmlschema-1/#st-restrict-facets
+    simpleTypeFacets oldFacets content baseType variety =
       case content of
         XML.STRestriction{..}
-          | Right ty <- baseType ->
-            refineConstrainingFacets _strsConstraints ty
+          | Right ty <- baseType -> do
+              case V._stVariety <$> baseType of
+                Right variety' ->
+                  when (variety /= variety')
+                    . throwError
+                    $ RestrictionVarietyMismatch s variety variety'
+                Left _ -> pure ()
+              newFacets <- refineConstrainingFacets _strsConstraints ty
+              _
         _ -> pure []
 
     simpleTypeVariety content baseType =
@@ -323,7 +277,16 @@ refineSimpleType s@XML.SimpleType{..} = do
               | Right ty <- baseType -> ty ^. V.stFundamentalFacets . V.ffOrdered
               | otherwise -> V.None
             V.STVList _ -> V.None
-            V.STVUnion _ -> _
+            V.STVUnion tys ->
+              case lca . N.toList $ fmap stAncestors tys of
+                Nothing
+                  | all
+                      ((== V.None) . (^. V.stFundamentalFacets . V.ffOrdered))
+                      tys
+                  -> V.None
+                  | otherwise -> V.Partial
+                Just ancestor ->
+                  ancestor ^. V.stFundamentalFacets . V.ffOrdered
       , _ffBounded = _
       , _ffCardinality = _
       , _ffNumeric = _
@@ -426,3 +389,4 @@ refineConstrainingFacets cfs expected =
 
 refineComplexType :: Monad m => XML.ComplexType -> ValidateT m V.ComplexType
 refineComplexType = _
+

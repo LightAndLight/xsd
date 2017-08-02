@@ -9,7 +9,7 @@ https://www.w3.org/TR/xmlschema-2/#rf-facets
 
 module Text.XML.XSD.Validation.ConstrainingFacet where
 
-import Prelude (Bool, Eq, Show)
+import Prelude (Bool(..), Eq, Show)
 
 import Data.Text (Text)
 
@@ -23,6 +23,20 @@ data WhiteSpace
   | WSReplace
   | WSCollapse
   deriving (Eq, Show)
+
+sameFacetKind :: ConstrainingFacet -> ConstrainingFacet -> Bool
+sameFacetKind CFLength{} CFLength{} = True
+sameFacetKind CFMinLength{} CFMinLength{} = True
+sameFacetKind CFMaxLength{} CFMaxLength{} = True
+sameFacetKind CFPattern{} CFPattern{} = True
+sameFacetKind CFEnumeration{} CFEnumeration{} = True
+sameFacetKind CFWhiteSpace{} CFWhiteSpace{} = True
+sameFacetKind CFMaxInclusive{} CFMaxInclusive{} = True
+sameFacetKind CFMaxExclusive{} CFMaxExclusive{} = True
+sameFacetKind CFMinInclusive{} CFMinInclusive{} = True
+sameFacetKind CFMinExclusive{} CFMinExclusive{} = True
+sameFacetKind CFTotalDigits{} CFTotalDigits{} = True
+sameFacetKind CFFractionDigits{} CFFractionDigits{} = True
 
 data ConstrainingFacet
   -- | 'length' constraining facet

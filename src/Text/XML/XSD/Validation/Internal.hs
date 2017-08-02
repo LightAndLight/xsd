@@ -1,7 +1,7 @@
 {-# language TemplateHaskell, QuasiQuotes #-}
 module Text.XML.XSD.Validation.Internal where
 
-import Prelude (Bool(..), Maybe(..), Either(..), Eq, Show)
+import Prelude
 
 import Control.Lens (makeLenses)
 import Data.List.NonEmpty (NonEmpty)
@@ -197,6 +197,11 @@ data STVariety
   | STVUnion { _stvuMemberTypes :: NonEmpty SimpleType }
   deriving (Eq, Show)
 
+-- | Internal representation of a Simple Type Definition.
+-- |
+-- | Note: The 'Eq' and 'Ord' instances for this type only compare the @name@
+-- | and @targetNamespace@ fields.
+-- | See https://www.w3.org/TR/xmlschema-1#Simple_Type_Definition_details
 data SimpleType
   = SimpleType
   { _stName :: Maybe NCName
@@ -207,7 +212,13 @@ data SimpleType
   , _stFinal :: [STFinal]
   , _stVariety :: STVariety
   }
-  deriving (Eq, Show)
+  deriving Show
+
+instance Eq SimpleType where
+  a == b = (_stName a == _stName b) && (_stTargetnamespace a == _stTargetnamespace b)
+  
+instance Ord SimpleType where
+  a <= b = (_stName a <= _stName b) && (_stTargetnamespace a <= _stTargetnamespace b) 
   
 data AnySimpleType
   = AnySimpleType
